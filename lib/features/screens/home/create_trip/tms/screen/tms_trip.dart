@@ -80,8 +80,14 @@ class TmsTrip extends StatelessWidget {
                         SizedBox(width: 10,),
                         Expanded(
                           child: Obx(() {
-                            print("Vehicle Number: ${controller.selectedVehicleNumbers.value}");  // Print driver name
-                            return buildReadOnlyField('Vehicle Number', controller.selectedVehicleNumbers.value);
+                            print("Vehicle Number: ${controller.selectedVehicleNumbers.value}");
+
+                            // ✅ Update the controller before building the UI
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              controller.vehicleNumberController.text = controller.selectedVehicleNumbers.value;
+                            });
+
+                            return buildReadOnlyField('Vehicle Number', controller.vehicleNumberController);
                           }),
                         ),
                       ],
@@ -90,18 +96,25 @@ class TmsTrip extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Obx(() {
-                            print("Driver ID: ${controller.selectedDriverID.value}");  // Print driver name
-                            return buildReadOnlyField('Driver ID', controller.selectedDriverID.value);
+                            print("Driver ID: ${controller.selectedDriverID.value}");
+
+                            // ✅ Update the controller before building the UI
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              controller.driverIDController.text = controller.selectedDriverID.value;
+                            });
+
+                            return buildReadOnlyField('Vehicle Number', controller.driverIDController);
                           }),
                         ),
                         SizedBox(width: 10),
                         Expanded(
                           child: Obx(() {
                             print("Driver Phone: ${controller.selectedDriverMobile.value}");  // Print driver phone
-                            return buildReadOnlyField(
-                                "Driver's Phone",
-                                controller.selectedDriverMobile.value
-                            );
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              controller.driverPhoneController.text = controller.selectedDriverMobile.value;
+                            });
+
+                            return buildReadOnlyField('Driver"s Phone', controller.driverPhoneController);
                           }),
                         ),
                       ],
@@ -115,7 +128,7 @@ class TmsTrip extends StatelessWidget {
                     SizedBox(height: 5,),
 
                     /// DATE (Auto-generated)
-                    buildReadOnlyField("Date", controller.currentDate.value),
+                    buildReadOnlyField("Date", controller.currentDateController),
 
                     /// Cargo Weight (Required, Numeric)
                     Row(
@@ -131,7 +144,7 @@ class TmsTrip extends StatelessWidget {
                                 required: false)),
                       ],
                     ),
-                    buildReadOnlyField("Challan", controller.challan.value),
+                    buildReadOnlyField("Challan", controller.challanController),
 
                     Row(
                       children: [
@@ -151,14 +164,15 @@ class TmsTrip extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(child: buildDateTimeField(
-                            "Pickup Date & Time", controller.pickupDate)),
+                            "Pickup Time", controller.pickupDate)),
                         SizedBox(width: 10,),
                         Expanded(
                           child: buildDateTimeField(
-                              "Drop-off Date & Time", controller.dropOffDate),
+                              "Drop-off Time", controller.dropOffDate),
                         ),
                       ],
                     ),
+                    SizedBox(height: 5,),
 
                     /// Type of Trip (Required)
                     Row(
@@ -174,10 +188,11 @@ class TmsTrip extends StatelessWidget {
                                 required: false)),
                       ],
                     ),
+                    SizedBox(height: 5,),
                     buildTextField("Special Note", controller.noteController,
                         isLabel: true),
                     SizedBox(
-                      height: 15,
+                      height: 10,
                     ),
 
                     /// POD (Required)
@@ -391,23 +406,26 @@ class TmsTrip extends StatelessWidget {
   }
 
   /// 🔹 Read-Only Text Field (No Validation)
-  Widget buildReadOnlyField(String label, String value) {
+  Widget buildReadOnlyField(String label, TextEditingController _controller) {
+    print("I AM Vehicle No Value ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: ${_controller.text}");
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
+        controller: _controller, // ✅ Use only controller (No initialValue)
         decoration: InputDecoration(
-          labelStyle:
-              quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen),
+          labelStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen),
           labelText: label,
           focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
-              borderRadius: BorderRadius.circular(12)),
+            borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
+            borderRadius: BorderRadius.circular(12),
+          ),
           enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(width: 1.5, color: AppColor.green),
-              borderRadius: BorderRadius.circular(12)),
+            borderSide: BorderSide(width: 1.5, color: AppColor.green),
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         readOnly: true,
-        initialValue: value,
       ),
     );
   }

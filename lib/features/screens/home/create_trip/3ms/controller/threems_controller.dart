@@ -21,17 +21,21 @@ class ThreemsController extends GetxController {
   var segment = RxnString();
   var deliveryStatus = RxnString();
   var isTripCreated = false.obs;
-  RxnString selectedVehicle = RxnString();
+  //RxnString selectedVehicle = RxnString();
   Rx<DateTime?> pickupDate = Rx<DateTime?>(null);
   Rx<DateTime?> dropOffDate = Rx<DateTime?>(null);
 
-  RxString selectedVehicleNumbers = "Not Found".obs;
+ /* RxString selectedVehicleNumbers = "Not Found".obs;
   RxString selectedDriverID = "Not Found".obs;
   RxString selectedDriverMobile = "Not Found".obs;
   RxList<String> vehicleID = <String>[].obs;
-  RxList<Map<String, dynamic>> vehicleData = <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> vehicleData = <Map<String, dynamic>>[].obs;*/
 
   // Text Controllers
+  TextEditingController vehicleIDController = TextEditingController();
+  TextEditingController vehicleNoController = TextEditingController();
+  TextEditingController driverIDController = TextEditingController();
+  TextEditingController driverPhoneController = TextEditingController();
   TextEditingController cargoWeightController = TextEditingController();
   TextEditingController serviceChargeController = TextEditingController();
   TextEditingController startTimeController = TextEditingController();
@@ -45,7 +49,7 @@ class ThreemsController extends GetxController {
   void onInit() {
     super.onInit();
     fetchLocations();
-    fetchVehicleNumbers();
+    //fetchVehicleNumbers();
     fetchBillingUnits();
     fetchSuppliers();
     fetchCargoType();
@@ -104,7 +108,7 @@ class ThreemsController extends GetxController {
     }
   }
 
-  Future<void> fetchVehicleNumbers() async {
+/*  Future<void> fetchVehicleNumbers() async {
     String apiUrl = "http://103.250.68.75/api/v1/vehicle_list";
     print("Fetching vehicle numbers from: $apiUrl");
 
@@ -157,7 +161,7 @@ class ThreemsController extends GetxController {
     }
 
     update(); // Notify listeners
-  }
+  }*/
 
   /// Fetch billing unit list from API
 

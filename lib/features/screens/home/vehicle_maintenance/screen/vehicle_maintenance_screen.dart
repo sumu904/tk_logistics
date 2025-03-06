@@ -167,11 +167,18 @@ class VehicleMaintenanceScreen extends StatelessWidget {
             Obx(() {
               return buildTextField(
                 "Workshop Name",
-                "",
-                controller: controller.workshopNameController,
-                enabled: controller.selectedWorkshopType.value ==
-                    "3rd Party Workshop",);
-            } ),
+                "", // Keep the value of the text field empty
+                readOnly: controller.selectedWorkshopType.value != "3rd Party Workshop", // Read-only if not 3rd Party Workshop
+                controller: controller.selectedWorkshopType.value != "3rd Party Workshop"
+                    ? TextEditingController(text: "T.K. Central")  // Set default placeholder value
+                    : controller.workshopNameController, // Use the actual controller for 3rd Party Workshop
+                style: TextStyle(
+                  color: controller.selectedWorkshopType.value != "3rd Party Workshop"
+                      ? AppColor.grey2 // Text color set to gray 2 for read-only
+                      : AppColor.green, // Default color for editable text
+                ),
+              );
+            }),
             SizedBox(height: 10),
             buildTextField("Cost", "",
                 controller: controller.costController,
@@ -180,7 +187,7 @@ class VehicleMaintenanceScreen extends StatelessWidget {
         ),
         actions: [
           TextButton(onPressed: () => Get.back(), child: Text("Cancel")),
-          ElevatedButton(onPressed: controller.addRecord, child: Text("Save")),
+          CustomButton(text: "Save",onTap: (){controller.addRecord(); Get.close(1);} ),
         ],
       ),
     );
@@ -314,9 +321,11 @@ class VehicleMaintenanceScreen extends StatelessWidget {
       {bool readOnly = false,
         bool isLabel = false,
         TextEditingController? controller,
+        TextStyle? style,
         TextInputType keyboardType = TextInputType.text,
-        bool? enabled}) {  // ✅ Added enabled parameter for dynamic control
+        bool enabled = true}) {  // ✅ Added enabled parameter for dynamic control
     return TextFormField(
+      style: readOnly ? style : TextStyle(),
       controller: controller ?? TextEditingController(text: initialValue),
       readOnly: readOnly,
       enabled: enabled ?? true, // ✅ Uses enabled value if provided
@@ -326,10 +335,14 @@ class VehicleMaintenanceScreen extends StatelessWidget {
         hintStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen),
         labelText: label,
         labelStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen),
-        focusedBorder: OutlineInputBorder(
+        focusedBorder:  readOnly ? OutlineInputBorder(
+            borderSide: BorderSide(width: 1.5, color: AppColor.grey2),
+            borderRadius: BorderRadius.circular(12)) : OutlineInputBorder(
             borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
             borderRadius: BorderRadius.circular(12)),
-        enabledBorder: OutlineInputBorder(
+        enabledBorder: readOnly ? OutlineInputBorder(
+            borderSide: BorderSide(width: 1.5, color: AppColor.grey2),
+            borderRadius: BorderRadius.circular(12)) : OutlineInputBorder(
             borderSide: BorderSide(width: 1.5, color: AppColor.green),
             borderRadius: BorderRadius.circular(12)),
         errorBorder: OutlineInputBorder(

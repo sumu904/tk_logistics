@@ -31,6 +31,8 @@ class TmsController extends GetxController {
   RxList<String> vehicleID = <String>[].obs;
   RxList<Map<String, dynamic>> vehicleData = <Map<String, dynamic>>[].obs;  // RxString for reactive updates
 
+  TextEditingController currentDateController = TextEditingController();
+  TextEditingController challanController = TextEditingController();
   final TextEditingController cargoWeightController = TextEditingController();
   final TextEditingController serviceChargeController = TextEditingController();
   final TextEditingController startTimeController = TextEditingController();
@@ -39,6 +41,9 @@ class TmsController extends GetxController {
   final TextEditingController pickSupplierController = TextEditingController();
   final TextEditingController distanceController = TextEditingController();
   final TextEditingController noteController = TextEditingController();
+  final TextEditingController vehicleNumberController = TextEditingController();
+  final TextEditingController driverIDController = TextEditingController();
+  final TextEditingController driverPhoneController = TextEditingController();
 
 
   @override
@@ -50,7 +55,27 @@ class TmsController extends GetxController {
     fetchCargoType();
     fetchTypeofTrip();
     fetchSegment();
+    currentDateController.text = getCurrentDate();
+    challanController.text = getInitialChallan();// Set initial date
   }
+  void setCurrentDate(String newDate) {
+    currentDateController.text = newDate;
+    update(); // If using GetBuilder
+  }
+  void setChallan(String newChallan) {
+    challanController.text = newChallan;
+    update(); // If using GetBuilder
+  }
+
+  String getCurrentDate() {
+    return DateTime.now().toLocal().toString().split(' ')[0]; // Format: YYYY-MM-DD
+  }
+
+  String getInitialChallan() {
+    return "CHL-${DateTime.now().millisecondsSinceEpoch}"; // Example: CHL-1640983200000
+  }
+
+
 
   Future<void> pickDateTime(Rx<DateTime?> selectedDate) async {
     DateTime? picked = await showDatePicker(
@@ -303,15 +328,7 @@ class TmsController extends GetxController {
   }
 
   // 🔹 Auto-generated values
-  final currentDate = DateTime.now().toString().split(" ")[0].obs;
-  final challan = "Auto-generated".obs;
 
-  // 🔹 Static dropdown options
-  //final List<String> billingUnits = ["CD", "CD-F", "CD-Dhk Dpt", "GD", "TF", "PP"];
-  //final List<String> cargoTypes = ["Type A", "Type B", "Type C"];
-  //final List<String> tripTypes = ["Up", "Down", "Empty"];
-  //final List<String> segments = ["Factory Delivery", "Depot Delivery", "Return Trip"];
-  final List<String> deliveryStatuses = ["Delivered", "Pending", "Failed"];
 
   /// 🔹 Handle form submission
   Future<void> createTrip() async {
@@ -348,8 +365,8 @@ class TmsController extends GetxController {
       "note": noteController.text,
      /* "driver": driver.value,
       "driver_phone": driverPhone.value,*/
-      "challan": challan.value,
-      "date": currentDate.value,
+      "challan": challanController.value,
+      "date": currentDateController.value,
     };
 
     print("Submitting Trip Data: $tripData");
@@ -382,6 +399,7 @@ class TmsController extends GetxController {
     pickSupplierController.dispose();
     distanceController.dispose();
     noteController.dispose();
+    currentDateController.dispose();
     super.onClose();
   }
 }

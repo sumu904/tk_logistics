@@ -26,7 +26,7 @@ class ThreemsTrip extends StatelessWidget {
             child: GetBuilder<ThreemsController>(
               initState: (_) {
                 tripController.fetchLocations();
-                tripController.fetchVehicleNumbers();
+                //tripController.fetchVehicleNumbers();
                 tripController.fetchBillingUnits();
                 tripController.fetchSuppliers();
                 tripController.fetchCargoType();
@@ -47,56 +47,43 @@ class ThreemsTrip extends StatelessWidget {
                     buildSearchableDropdown(
                         "Pick Vendor", controller.pickSuppliers,
                         controller.pickSupplier),
+                    SizedBox(height: 5,),
                     Row(
                       children: [
                         Expanded(
-                          child: buildSearchableDropdown(
+                          child: buildTextField(
                             "Vehicle ID",
-                            controller.vehicleID,
-                            controller.selectedVehicle,  // Bind selected vehicle
-                            onSelected: (selectedValue) {
-                              controller.onVehicleSelected(selectedValue);
-                              // Trigger selection
-                            },
+                            controller.vehicleIDController,
                           ),
                         ),
                         SizedBox(width: 10,),
                         Expanded(
-                          child: Obx(() {
-                            print("Vehicle Number: ${controller.selectedVehicleNumbers.value}");  // Print driver name
-                            return buildReadOnlyField('Vehicle Number', controller.selectedVehicleNumbers.value);
-                          }),
+                          child: buildTextField('Vehicle Number', controller.vehicleNoController),
                         ),
                       ],
                     ),
                     Row(
                       children: [
                         Expanded(
-                          child: Obx(() {
-                            print("Driver ID: ${controller.selectedDriverID.value}");  // Print driver name
-                            return buildReadOnlyField('Driver ID', controller.selectedDriverID.value);
-                          }),
+                          child: buildTextField('Driver ID', controller.driverIDController),
                         ),
                         SizedBox(width: 10),
                         Expanded(
-                          child: Obx(() {
-                            print("Driver Phone: ${controller.selectedDriverMobile.value}");  // Print driver phone
-                            return buildReadOnlyField(
+                            //print("Driver Phone: ${controller.selectedDriverMobile.value}");  // Print driver phone
+                            child: buildTextField(
                                 "Driver's Phone",
-                                controller.selectedDriverMobile.value
-                            );
-                          }),
+                                controller.driverPhoneController),
                         ),
                       ],
                     ),
-                    SizedBox(height: 10,),
+                    SizedBox(height: 5,),
 
                     /// CUSTOMER (Required)
                     buildSearchableDropdown(
                         "Billing Unit", controller.billingUnits, controller.billingUnit,
                         required: true),
 
-                    SizedBox(height: 10,),
+                    SizedBox(height: 5,),
 
 
                     /// DATE (Auto-generated)
@@ -124,20 +111,21 @@ class ThreemsTrip extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(child: buildDateTimeField(
-                            "Pickup Date & Time", controller.pickupDate)),
+                            "Pickup Time", controller.pickupDate)),
                         SizedBox(width: 10,),
                         Expanded(
                           child: buildDateTimeField(
-                              "Drop-off Date & Time", controller.dropOffDate),
+                              "Drop-off Time", controller.dropOffDate),
                         ),
                       ],
                     ),
+                    SizedBox(height: 5,),
 
                     /// Segment (Required)
                     buildSearchableDropdown("Segment", controller.segments, controller.segment, required: false),
-
+                    SizedBox(height: 5,),
                     buildTextField("Special Note", controller.noteController, isLabel: true),
-                    SizedBox(height: 15,),
+                    SizedBox(height: 10,),
                     CustomOutlinedButton(
                       text : "Proof of Delivery",
                       color: AppColor.green,
@@ -239,13 +227,12 @@ class ThreemsTrip extends StatelessWidget {
           items,
           selectedValue,
           controller,
-              (selectedVehicle) {
-            selectedValue.value = selectedVehicle;  // Update the selected vehicle value
-            final tmsController = Get.find<ThreemsController>();  // Get the controller instance
-            tmsController.onVehicleSelected(selectedVehicle);
-            // Update driver info
-          },
-        );
+              (selected) {
+                selectedValue.value = selected; // ✅ Update selected value
+                if (onSelected != null) {
+                  onSelected(selected); // ✅ Call the callback if provided
+                }
+              });
       },
 
 // Open search dialog
@@ -409,15 +396,6 @@ class ThreemsTrip extends StatelessWidget {
         ),
         controller: controller,
         keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
-        /*validator: (value) {
-          if (required && (value == null || value.isEmpty)) {
-            return "Please enter $label";
-          }
-          if (isNumeric && value != null && value.isNotEmpty && double.tryParse(value) == null) {
-            return "Enter a valid number";
-          }
-          return null;
-        },*/
       ),
     );
   }
