@@ -342,7 +342,8 @@ class TmsController extends GetxController {
       Get.snackbar(
         success ? "Success" : "Error",
         success ? "Trip Created Successfully" : "Failed to Create Trip",
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
+        colorText: AppColor.white,
         backgroundColor: success ? AppColor.seaGreen : Colors.red,
       );
     }

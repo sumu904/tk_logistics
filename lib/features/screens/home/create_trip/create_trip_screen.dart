@@ -29,9 +29,6 @@ class _CreateTripScreenState extends State<CreateTripScreen>
     super.dispose();
   }
 
-  /*final AttendanceController attendanceController = Get.put(AttendanceController());
-  final LocationController locationController = Get.find();*/
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

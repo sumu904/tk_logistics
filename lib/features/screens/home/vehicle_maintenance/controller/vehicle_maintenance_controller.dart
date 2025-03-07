@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../../../../../util/app_color.dart';
+
 class MaintenanceController extends GetxController {
   // Text controllers
   var transactionNumber = "System Generate".obs;
@@ -101,13 +103,15 @@ class MaintenanceController extends GetxController {
         selectedWorkshopType.value == null || selectedWorkshopType.value!.isEmpty ||
         costController.text.trim().isEmpty || selectedDate.value == null) {
 
-      Get.snackbar("Error", "Please fill all required fields", snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar("Error", "Please fill all required fields", snackPosition: SnackPosition.TOP, colorText: AppColor.white,
+        backgroundColor: AppColor.primaryRed,);
       return;
     }
 
     // Validate workshop name if "3rd Party Workshop" is selected
     if (selectedWorkshopType.value == "3rd Party Workshop" && workshopNameController.text.trim().isEmpty) {
-      Get.snackbar("Error", "Please enter a Workshop Name for 3rd Party Workshop", snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar("Error", "Please enter a Workshop Name for 3rd Party Workshop", snackPosition: SnackPosition.TOP,colorText: AppColor.white,
+        backgroundColor: AppColor.primaryRed,);
       return;
     }
 
@@ -133,7 +137,8 @@ class MaintenanceController extends GetxController {
       "cost": costController.text.trim(),
     };
 
-    Get.snackbar("Success", "Record successfully added!", snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar("Success", "Record successfully added!", snackPosition: SnackPosition.TOP, colorText: AppColor.white,
+      backgroundColor: AppColor.seaGreen,);
 
     Get.back();
     clearFields();

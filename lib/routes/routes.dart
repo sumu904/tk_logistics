@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:tk_logistics/features/screens/home/diesel_entry/screen/diesel_entry_list.dart';
 import 'package:tk_logistics/routes/routes_name.dart';
 
 import '../features/auth/login/login_screen.dart';
@@ -54,6 +55,11 @@ class AppRoutes {
     GetPage(
       name: RoutesName.proofOfDeliveryScreen,
       page: () =>  ProofOfDeliveryScreen(),
+    ),
+
+    GetPage(
+      name: RoutesName.dieselEntryList,
+      page: () =>  DieselEntryList(),
     ),
 
     /*GetPage(

@@ -35,151 +35,96 @@ class DieselEntryScreen extends StatelessWidget {
             style: quicksandBold.copyWith(
                 fontSize: Dimensions.fontSizeEighteen, color: AppColor.white),
           )),
-      body: Padding(
-        padding:  EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeTwenty,vertical: Dimensions.paddingSizeTwenty),
-        child: SingleChildScrollView(
-            child: Form(
-                key: _formKey,
-              child: GetBuilder<DieselEntryController>(
-                  initState: (_) {
-                    controller
-                        .fetchVehicleNumbers();// ✅ Fetch locations when screen opens
-                  },
-                  builder: (controller) {
-                    return Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: buildSearchableDropdown(
-                                "Vehicle ID",
-                                controller.vehicleID,
-                                controller.selectedVehicle,  // Bind selected vehicle
-                                onSelected: (selectedValue) {
-                                  controller.onVehicleSelected(selectedValue);
-                                  // Trigger selection
-                                },
-                              ),
-                            ),
-                            SizedBox(width: 10,),
-                            Expanded(
-                              child: Obx(() {
-                                print("Vehicle Number: ${controller.selectedVehicleNumbers.value}");
-
-                                // ✅ Update the controller before building the UI
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  controller.vehicleNumberController.text = controller.selectedVehicleNumbers.value;
-                                });
-
-                                return buildReadOnlyField('Vehicle Number', controller.vehicleNumberController);
-                              }),
-                            ),
-
-                          ],
-                        ),
-                        Obx(() {
-                          print("Driver Name: ${controller.selectedDriverName.value}");
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            controller.driverNameController.text = controller.selectedDriverName.value;
-                          });
-
-                          return buildReadOnlyField('Driver Name', controller.driverNameController);
-                        }),
-                        SizedBox(height: 10),
-                        buildDatePicker(context),
-                        SizedBox(height: 10),
-                        buildDieselAmountField("Diesel Amount (Ltr)",
-                            controller.dieselAmountController,
-                            TextInputType.number),
-                        buildTextField(
-                            "Pump Name", controller.pumpNameController,
-                            TextInputType.text),
-                        SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Expanded(child: CustomButton(
-                              onTap: () {
-                                if (_formKey.currentState?.validate() ?? false) {
-                                  print("Form validated successfully!");
-                                  controller.addEntry(); // ✅ Proceed with submission if valid
-                                } else {
-                                  print("Validation failed! Please check inputs.");
-                                }
+      body: SingleChildScrollView(
+        child: Padding(
+          padding:  EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeTwenty,vertical: Dimensions.paddingSizeTwenty),
+          child: Form(
+              key: _formKey,
+            child: GetBuilder<DieselEntryController>(
+                initState: (_) {
+                  controller
+                      .fetchVehicleNumbers();
+                  controller.fetchFuelEntries();// ✅ Fetch locations when screen opens
+                },
+                builder: (controller) {
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: buildSearchableDropdown(
+                              "Vehicle ID",
+                              controller.vehicleID,
+                              controller.selectedVehicle,  // Bind selected vehicle
+                              onSelected: (selectedValue) {
+                                controller.onVehicleSelected(selectedValue);
+                                // Trigger selection
                               },
-                              text: 'Submit',)),
-                            SizedBox(width: 10,),
-                            Expanded(child: CustomOutlinedButton(
-                              onTap: () {}, text: 'Confirm',)),
-                          ],
-                        ),
-                        SizedBox(height: 20),
-                        Text("Diesel Entry List", style: quicksandBold.copyWith(
-                            fontSize: Dimensions.fontSizeEighteen,
-                            fontWeight: FontWeight.w800,
-                            color: AppColor.neviBlue)),
-                        SizedBox(height: 10,),
-                        Obx(() {
-                          if (controller.latestEntry.value == null) {
-                            return Text(
-                              "No entries yet.",
-                              style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeSixteen, color: AppColor.neviBlue),
-                            );
-                          }
-
-                          var entry = controller.latestEntry.value!;
-
-                          return Card(
-                            margin: EdgeInsets.symmetric(vertical: 5),
-                            child: ListTile(
-                              title: Text(
-                                "Vehicle ID: ${entry['vehicle']}",
-                                style: quicksandSemibold.copyWith(
-                                    fontSize: Dimensions.fontSizeSixteen,
-                                    color: AppColor.neviBlue),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Vehicle Number: ${entry['vehicleNumbers']}",
-                                    style: quicksandSemibold.copyWith(
-                                        fontSize: Dimensions.fontSizeFourteen,
-                                        color: AppColor.neviBlue),
-                                  ),
-                                  Text(
-                                    "Driver: ${entry['driver']}",
-                                    style: quicksandSemibold.copyWith(
-                                        fontSize: Dimensions.fontSizeFourteen,
-                                        color: AppColor.neviBlue),
-                                  ),
-                                  Text(
-                                    "Date: ${entry['date']}",
-                                    style: quicksandSemibold.copyWith(
-                                        fontSize: Dimensions.fontSizeFourteen,
-                                        color: AppColor.neviBlue),
-                                  ),
-                                  Text(
-                                    "Diesel: ${entry['diesel']} Ltr",
-                                    style: quicksandSemibold.copyWith(
-                                        fontSize: Dimensions.fontSizeFourteen,
-                                        color: AppColor.neviBlue),
-                                  ),
-                                  Text(
-                                    "Pump: ${entry['pump']}",
-                                    style: quicksandSemibold.copyWith(
-                                        fontSize: Dimensions.fontSizeFourteen,
-                                        color: AppColor.neviBlue),
-                                  ),
-                                ],
-                              ),
                             ),
-                          );
-                        }),
-                      ],
-                    );
-                  }),
-            ),
+                          ),
+                          SizedBox(width: 10,),
+                          Expanded(
+                            child: Obx(() {
+                              print("Vehicle Number: ${controller.selectedVehicleNumbers.value}");
+        
+                              // ✅ Update the controller before building the UI
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                controller.vehicleNumberController.text = controller.selectedVehicleNumbers.value;
+                              });
+        
+                              return buildReadOnlyField('Vehicle Number', controller.vehicleNumberController);
+                            }),
+                          ),
+        
+                        ],
+                      ),
+                      Obx(() {
+                        print("Driver Name: ${controller.selectedDriverName.value}");
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          controller.driverNameController.text = controller.selectedDriverName.value;
+                        });
+        
+                        return buildReadOnlyField('Driver Name', controller.driverNameController);
+                      }),
+                      SizedBox(height: 10),
+                      buildDatePicker(context),
+                      SizedBox(height: 10),
+                      buildDieselAmountField("Diesel Amount (Ltr)",
+                          controller.dieselAmountController,
+                          TextInputType.number),
+                      buildTextField(
+                          "Pump Name", controller.pumpNameController,
+                          TextInputType.text),
+                      SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Expanded(child: CustomButton(
+                            onTap: () {
+                              if (_formKey.currentState?.validate() ?? false) {
+                                print("Form validated successfully!");
+                                controller.addEntry(); // ✅ Proceed with submission if valid
+                                controller.fetchFuelEntries();
+                              } else {
+                                print("Validation failed! Please check inputs.");
+                              }
+                            },
+                            text: 'Submit',)),
+                          SizedBox(width: 10,),
+                          Expanded(child: CustomOutlinedButton(
+                            onTap: () {}, text: 'Confirm',)),
+                        ],
+                      ),
+                      SizedBox(height: 20),
+                      CustomOutlinedButton(
+                        width: double.infinity,
+                        onTap: () {
+                          Get.toNamed("DieselEntryList");
+                        }, text: 'See Entry List',)
+                    ],
+                  );
+                }),
+          ),
         ),
       ),
     );

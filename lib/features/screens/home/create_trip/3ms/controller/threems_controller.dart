@@ -25,12 +25,6 @@ class ThreemsController extends GetxController {
   Rx<DateTime?> pickupDate = Rx<DateTime?>(null);
   Rx<DateTime?> dropOffDate = Rx<DateTime?>(null);
 
- /* RxString selectedVehicleNumbers = "Not Found".obs;
-  RxString selectedDriverID = "Not Found".obs;
-  RxString selectedDriverMobile = "Not Found".obs;
-  RxList<String> vehicleID = <String>[].obs;
-  RxList<Map<String, dynamic>> vehicleData = <Map<String, dynamic>>[].obs;*/
-
   // Text Controllers
   TextEditingController vehicleIDController = TextEditingController();
   TextEditingController vehicleNoController = TextEditingController();
@@ -108,60 +102,6 @@ class ThreemsController extends GetxController {
     }
   }
 
-/*  Future<void> fetchVehicleNumbers() async {
-    String apiUrl = "http://103.250.68.75/api/v1/vehicle_list";
-    print("Fetching vehicle numbers from: $apiUrl");
-
-    try {
-      final response = await http.get(Uri.parse(apiUrl));
-
-      print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        print("Decoded JSON: $data");
-
-        if (data.containsKey('results') && data['results'] is List) {
-          vehicleData.assignAll(List<Map<String, dynamic>>.from(data['results']));
-          vehicleID.assignAll(vehicleData.map((item) => item['xvehicle'].toString()).toList());
-
-          print("Fetched Vehicle Numbers: $vehicleID");
-        } else {
-          print("Unexpected API Response Format for vehicle numbers");
-        }
-      } else {
-        print("Failed to fetch vehicle numbers: ${response.statusCode}");
-      }
-    } catch (e) {
-      print("Error fetching vehicle numbers: $e");
-    }
-  }
-
-  void onVehicleSelected(String selectedVehicle) {
-    print("Vehicle Selected: $selectedVehicle");
-
-    // Find the selected vehicle data from the vehicleData list
-    var selectedVehicleData = vehicleData.firstWhere(
-          (item) => item['xvehicle'] == selectedVehicle,
-      orElse: () => <String, dynamic>{}, // ✅ Ensures an empty Map<String, dynamic> is returned
-    );
-
-    if (selectedVehicleData.isNotEmpty) {
-      // ✅ Use safe type casting to ensure values are Strings
-      selectedVehicleNumbers.value = (selectedVehicleData["xvmregno"] as String?) ?? "Not Available";
-      selectedDriverID.value = (selectedVehicleData["xdriver"] as String?) ?? "Not Available";
-      selectedDriverMobile.value = (selectedVehicleData['xmobile'] as String?) ?? "Not Available";
-
-      print("Driver Data Updated:  ${selectedVehicleNumbers.value} - ${selectedDriverID.value} - ${selectedDriverMobile.value}");
-    } else {
-      selectedVehicleNumbers.value = "Not Found";
-      selectedDriverID.value = "Not Found";
-      selectedDriverMobile.value = "Not Found";
-    }
-
-    update(); // Notify listeners
-  }*/
 
   /// Fetch billing unit list from API
 
@@ -315,7 +255,8 @@ class ThreemsController extends GetxController {
       Get.snackbar(
         success ? "Success" : "Error",
         success ? "Trip Created Successfully" : "Failed to Create Trip",
-        snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.TOP,
+        colorText: AppColor.white,
         backgroundColor: success ? AppColor.seaGreen : Colors.red,
       );
     }

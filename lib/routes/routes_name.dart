@@ -9,6 +9,7 @@ class RoutesName {
   static const String quotationScreen = '/QuotationScreen';
   static const String tripHistoryScreen = '/TripHistoryScreen';
   static const String proofOfDeliveryScreen = '/ProofOfDeliveryScreen';
+  static const String dieselEntryList = '/DieselEntryList';
   /*static const String registrationPage = '/RegistrationPage';
   static const String loginPage = '/LoginPage';
   static const String homePage = '/HomePage';*/
@@ -24,6 +25,7 @@ class RoutesName {
   static String getQuotationScreen() => quotationScreen;
   static String getTripHistoryScreen() => tripHistoryScreen;
   static String getProofOfDeliveryScreen() => proofOfDeliveryScreen;
+  static String getPDieselEntryList() => dieselEntryList;
   /*static String getRegistrationPage() => registrationPage;
   static String getLoginPage() => loginPage;
   static String getHomePage() => homePage;*/
