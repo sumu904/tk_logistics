@@ -20,13 +20,13 @@ class CustomButton extends StatelessWidget {
       child: Container(
         width: width,
         height: height,
-        margin: EdgeInsets.symmetric(horizontal: Dimensions.marginSizeFifteen,vertical: Dimensions.marginSizeTen),
+        margin: EdgeInsets.symmetric(horizontal: Dimensions.marginSizeTen,vertical: Dimensions.marginSizeTen),
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(Dimensions.radiusEight),
         ),
         child: Center(
-          child: Text(text, style: quicksandBold.copyWith(color: textColor ?? AppColor.white,fontSize: Dimensions.fontSizeFourteen )),
+          child: Text(text, style: quicksandBold.copyWith(color: textColor ?? AppColor.white,fontSize: Dimensions.fontSizeThirteen )),
         ),
       ),
     );

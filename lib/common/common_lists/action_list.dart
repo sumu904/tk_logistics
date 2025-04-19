@@ -8,6 +8,10 @@ class ActionModel{
 
 List<ActionModel> actionList=[
   ActionModel(
+      image: "assets/images/dashboard.jpg",
+      title: "Dashboard"
+  ),
+  ActionModel(
       image: "assets/images/create_trip.jpeg",
       title: "Create New Trip"
   ),ActionModel(
@@ -16,7 +20,7 @@ List<ActionModel> actionList=[
   ),
   ActionModel(
       image: "assets/images/diesel_entry.jpg",
-      title: "Diesel Entry"
+      title: "Fuel Entry"
   ),ActionModel(
       image: "assets/images/vehicle_maintenance.jpg",
       title: "Vehicle Maintenance"

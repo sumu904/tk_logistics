@@ -74,17 +74,16 @@ class LoginScreen extends StatelessWidget {
                     Obx(() => Checkbox(
                       value: loginController.isChecked.value,
                       onChanged: (value) {
-                        loginController.isChecked(value);
+                        loginController.isChecked.value = value ?? false;
                       },
                       activeColor: AppColor.white,
                       checkColor: AppColor.primaryRed,
-                      side: WidgetStateBorderSide.resolveWith(
-                              (states) => BorderSide(
-                            color: loginController.isChecked == true
-                                ? AppColor.primaryRed
-                                : AppColor.neviBlue,
-                            width: 2,
-                          )),
+                      side: BorderSide(
+                        color: loginController.isChecked.value
+                            ? AppColor.primaryRed
+                            : AppColor.neviBlue,
+                        width: 2,
+                      ),
                     )),
                     Text("Remember Me",
                         style: quicksandBold.copyWith(
@@ -92,13 +91,14 @@ class LoginScreen extends StatelessWidget {
                             color: AppColor.neviBlue)),
                     Spacer(),
                     TextButton(
-                        onPressed: () {},
-                        child: Text(
-                          "Forgot Password?",
-                          style: quicksandBold.copyWith(
-                              fontSize: Dimensions.fontSizeFourteen,
-                              color: AppColor.green),
-                        )),
+                      onPressed: () {},
+                      child: Text(
+                        "Forgot Password?",
+                        style: quicksandBold.copyWith(
+                            fontSize: Dimensions.fontSizeFourteen,
+                            color: AppColor.green),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -116,6 +116,7 @@ class LoginScreen extends StatelessWidget {
                   if (_formKey.currentState!.validate()) {
                     // If the form is valid, proceed with login
                     loginController.login();
+                    loginController.saveCredentials();
                   }
                 },
               )),

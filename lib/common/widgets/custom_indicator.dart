@@ -9,7 +9,7 @@ final spinkit = SpinKitChasingDots(
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: index.isEven ? AppColor.primaryOrange : AppColor.blackOlive,
+        color: index.isEven ? AppColor.neviBlue : AppColor.green,
       ),
     );
   },

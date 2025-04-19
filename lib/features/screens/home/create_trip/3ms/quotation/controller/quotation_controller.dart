@@ -4,6 +4,8 @@ import 'package:tk_logistics/util/app_color.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../../../../../../../const/const_values.dart';
+
 class QuotationController extends GetxController {
   TextEditingController vehicleNumberController = TextEditingController();
   TextEditingController capacityController = TextEditingController();
@@ -29,7 +31,7 @@ class QuotationController extends GetxController {
   }
 
   Future<void> fetchSuppliers() async {
-    String apiUrl = "http://103.250.68.75/api/v1/dropdown_list?xtype=Supplier";
+    String apiUrl = "${baseUrl}/dropdown_list?xtype=Supplier";
     print("Fetching locations from: $apiUrl");
 
     try {

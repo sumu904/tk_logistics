@@ -3,54 +3,15 @@ import 'package:get/get.dart';
 import 'package:tk_logistics/features/screens/home/home_screen.dart';
 
 import '../../../../util/app_color.dart';
+import '../../../screens/home/trip_history/controller/trip_history_controller.dart';
 import '../api/login_api.dart';
 import 'user_controller.dart';
 
-/*class LoginController extends GetxController {
-  // Controllers for text fields
-  final TextEditingController phoneController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-
-  // Observable variables
-  var isChecked = false.obs;
-  var hidePassword = true.obs;
-  var isLoading = false.obs;
-
-  // Toggle password visibility
-  void togglePasswordVisibility() {
-    hidePassword.value = !hidePassword.value;
-  }
-
-  // Handle checkbox toggle
-  void toggleRememberMe(bool? value) {
-    isChecked.value = value ?? false;
-  }
-
-  // Login function
-  void login() async {
-    isLoading.value = true;
-    await Future.delayed(Duration(seconds: 2)); // Simulate a network request
-    isLoading.value = false;
-
-    // Example authentication logic
-    if (phoneController.text == "01XXXXXXXXX" && passwordController.text == "password") {
-      Get.snackbar("Success", "Login successful!", backgroundColor: AppColor.seaGreen, colorText: Colors.white);
-      Get.toNamed("HomeScreen"); // Navigate to home screen
-    } else {
-      Get.snackbar("Error", "Invalid Phone no or password", backgroundColor: AppColor.primaryRed, colorText: Colors.white);
-    }
-  }
-
-  @override
-  void onClose() {
-    phoneController.dispose();
-    passwordController.dispose();
-    super.onClose();
-  }
-}*/
-
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginController extends GetxController {
+  final tripHistoryController = Get.put(TripHistoryController());
+
   var isLoading = false.obs;
   var hidePassword = true.obs;
   var isChecked = false.obs;
@@ -58,38 +19,54 @@ class LoginController extends GetxController {
   final TextEditingController userNameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final LoginApi _loginApi = LoginApi();
-  final userController = Get.put(UserController());// Initialize LoginApi
+  final userController = Get.put(UserController());
 
-  // Call this function to perform the login
+  @override
+  void onInit() {
+    super.onInit();
+    loadCredentials(); // Load saved credentials when the controller is initialized
+  }
+
+  @override
+  void onClose() {
+    userNameController.dispose();
+    passwordController.dispose();
+    super.onClose();
+  }
+
   Future<void> login() async {
-    // Set the loading state to true to show loading indicator
     isLoading(true);
 
     try {
-      // Call the API to perform login
       final user = await _loginApi.login(
         userNameController.text,
         passwordController.text,
-        Get.context!,  // Pass the context from GetX
+        Get.context!,
       );
       print("${user?.firstName}");
 
-      // If login is successful, navigate to the next page
-      if (user!= null) {
+      if (user != null) {
         userController.setUser(user);
+
+        if (isChecked.value) {
+          await saveCredentials();
+        } else {
+          await clearCredentials(); // Clear saved credentials if Remember Me is unchecked
+        }
+
         Get.offAll(() => HomeScreen());
         Get.snackbar(
           'Login Successful',
           'Successfully Logged In',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
           backgroundColor: AppColor.seaGreen,
           colorText: AppColor.white,
-        );// Navigate to NavBarPage
+        );
       } else {
         Get.snackbar(
           'Login Failed',
           'Invalid credentials. Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
+          snackPosition: SnackPosition.TOP,
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
@@ -104,6 +81,36 @@ class LoginController extends GetxController {
       );
     } finally {
       isLoading(false);
+    }
+  }
+
+  Future<void> saveCredentials() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('username', userNameController.text);
+    await prefs.setString('password', passwordController.text);
+    await prefs.setBool('rememberMe', true);
+  }
+
+  Future<void> clearCredentials() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('username');
+    await prefs.remove('password');
+    await prefs.setBool('rememberMe', false);
+  }
+
+  Future<void> loadCredentials() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool rememberMe = prefs.getBool('rememberMe') ?? false;
+
+    if (rememberMe) {
+      String? savedUsername = prefs.getString('username');
+      String? savedPassword = prefs.getString('password');
+
+      if (savedUsername != null && savedPassword != null) {
+        userNameController.text = savedUsername;
+        passwordController.text = savedPassword;
+        isChecked.value = true;
+      }
     }
   }
 }

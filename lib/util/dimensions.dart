@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 class Dimensions {
   static double fontSizeTen = 10;
   static double fontSizeTwelve = 12;
+  static double fontSizeThirteen = 13;
   static double fontSizeFourteen = 14;
   static double fontSizeFifteen = 15;
   static double fontSizeSixteen = 16;

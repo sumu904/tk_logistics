@@ -7,36 +7,37 @@ class User {
   String? firstName;
   String? lastName;
   bool? isActive;
-  Null? access;
-  Null? zone;
+  dynamic access; // Changed from Null? to dynamic?
+  dynamic zone;
   String? image;
-  Null? accessControl;
+  dynamic accessControl;
   String? userType;
-  Null? homeLat;
-  Null? homeLong;
-  Null? ziId;
-  Null? ciId;
+  dynamic homeLat;
+  dynamic homeLong;
+  dynamic ziId;
+  dynamic ciId;
   String? xwh;
 
-  User(
-      {this.id,
-        this.username,
-        this.email,
-        this.token,
-        this.designationId,
-        this.firstName,
-        this.lastName,
-        this.isActive,
-        this.access,
-        this.zone,
-        this.image,
-        this.accessControl,
-        this.userType,
-        this.homeLat,
-        this.homeLong,
-        this.ziId,
-        this.ciId,
-        this.xwh});
+  User({
+    this.id,
+    this.username,
+    this.email,
+    this.token,
+    this.designationId,
+    this.firstName,
+    this.lastName,
+    this.isActive,
+    this.access,
+    this.zone,
+    this.image,
+    this.accessControl,
+    this.userType,
+    this.homeLat,
+    this.homeLong,
+    this.ziId,
+    this.ciId,
+    this.xwh,
+  });
 
   User.fromJson(Map<String, dynamic> json) {
     id = json['id'] ?? 0;
@@ -47,7 +48,7 @@ class User {
     firstName = json['first_name'] ?? "";
     lastName = json['last_name'] ?? "";
     isActive = json['is_active'] ?? false;
-    access = json['access'];  // Keep as is, since it's null in API
+    access = json['access']; // Now handles both null and non-null values
     zone = json['zone'];
     image = json['image'] ?? "";
     accessControl = json['access_control'];
@@ -59,27 +60,26 @@ class User {
     xwh = json['xwh'] ?? "";
   }
 
-
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    data['username'] = this.username;
-    data['email'] = this.email;
-    data['token'] = this.token;
-    data['designation_id'] = this.designationId;
-    data['first_name'] = this.firstName;
-    data['last_name'] = this.lastName;
-    data['is_active'] = this.isActive;
-    data['access'] = this.access;
-    data['zone'] = this.zone;
-    data['image'] = this.image;
-    data['access_control'] = this.accessControl;
-    data['user_type'] = this.userType;
-    data['home_lat'] = this.homeLat;
-    data['home_long'] = this.homeLong;
-    data['zi_id'] = this.ziId;
-    data['ci_id'] = this.ciId;
-    data['xwh'] = this.xwh;
-    return data;
+    return {
+      'id': id,
+      'username': username,
+      'email': email,
+      'token': token,
+      'designation_id': designationId,
+      'first_name': firstName,
+      'last_name': lastName,
+      'is_active': isActive,
+      'access': access,
+      'zone': zone,
+      'image': image,
+      'access_control': accessControl,
+      'user_type': userType,
+      'home_lat': homeLat,
+      'home_long': homeLong,
+      'zi_id': ziId,
+      'ci_id': ciId,
+      'xwh': xwh,
+    };
   }
 }

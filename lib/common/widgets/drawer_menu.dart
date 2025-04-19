@@ -38,14 +38,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
                       SizedBox(
                         width: 10,
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("${userController.user.value?.firstName}", style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeTwenty, color: AppColor.neviBlue,)),
-                          SizedBox(height: 2,),
-                          Text("01XXXXXXXXX", style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeTwelve, color: AppColor.grey4)),
-                        ],
-                      ),
+                      Text("${userController.user.value?.firstName}", style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeTwenty, color: AppColor.neviBlue,)),
                     ],
                   ),
                 ),
@@ -83,7 +76,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
               ),
               ListTile(
                 onTap: () {
-                  //Navigator.of(context).push(MaterialPageRoute(builder: (context)=>SignupPage()));
+                  userController.logout();
                 },
                 leading: Icon(Icons.logout, size: 22,color: AppColor.neviBlue,),
                 title: Text("Log out", style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeSixteen,fontWeight: FontWeight.w700,color: AppColor.neviBlue)),

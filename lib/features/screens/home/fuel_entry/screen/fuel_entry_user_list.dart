@@ -8,10 +8,10 @@ import '../../../../../util/app_color.dart';
 import '../../../../../util/dimensions.dart';
 import '../../../../../util/styles.dart';
 import '../../../../auth/login/controller/user_controller.dart';
-import '../controller/diesel_entry_controller.dart';
+import '../controller/fuel_entry_controller.dart';
 
-class DieselEntryUserList extends StatelessWidget {
-  final DieselEntryController controller = Get.put(DieselEntryController());
+class FuelEntryUserList extends StatelessWidget {
+  final FuelEntryController controller = Get.put(FuelEntryController());
   final userController = Get.find<UserController>();
 
   @override
@@ -82,11 +82,18 @@ class DieselEntryUserList extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                "Fuel Quantity : ${entry['xqtyord'] ?? '0'} L",
+                                "Fuel Type: ${entry['xtype'] ?? 'Unknown'}",
                                 style: quicksandRegular.copyWith(
                                   fontSize: Dimensions.fontSizeFourteen,
                                 ),
                               ),
+                              Text(
+                                "Fuel Quantity : ${NumberFormat('0.0').format(double.tryParse(entry['xqtyord']?.toString() ?? '') ?? 0)} L",
+                                style: quicksandRegular.copyWith(
+                                  fontSize: Dimensions.fontSizeFourteen,
+                                ),
+                              ),
+
                               Text(
                                 "Pump Name : ${entry['xwh'] ?? 'Unknown'} ",
                                 style: quicksandRegular.copyWith(

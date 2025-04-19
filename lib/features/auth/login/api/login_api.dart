@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import '../../../../const/const_values.dart';
 import '../controller/user_controller.dart';
 import 'model/user.dart';
 
 class LoginApi {
-  final String apiUrl = 'http://103.250.68.75/api/v1/account/login/';
+  final String apiUrl = '${baseUrl}/account/login/';
 
   Future<User?> login(String username, String password,
       BuildContext context) async {
@@ -29,6 +30,7 @@ class LoginApi {
         if (data.containsKey('data')) {
           if (data['data'].containsKey('username')) {
             print("User data from response: ${data['data']['username']}");
+            print("User data from response: ${data['data']['zone']}");
           } else {
             print("No 'user' key in data['data']");
           }
@@ -39,7 +41,8 @@ class LoginApi {
         if (data['status'] == 'success' && data['data'] != null) {
           final user = User.fromJson(data['data']); // Directly pass data['data']
           Get.find<UserController>().setUser(user);
-          print("User object after login: ${user.firstName}");
+          print("User object after login: ${user.username}");
+          print("User access after login: ${user.access}");
           print("Login successful");
           return user;
         } else {

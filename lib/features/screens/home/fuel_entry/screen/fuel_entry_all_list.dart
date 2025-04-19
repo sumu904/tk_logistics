@@ -5,10 +5,10 @@ import 'package:intl/intl.dart';
 import '../../../../../util/app_color.dart';
 import '../../../../../util/dimensions.dart';
 import '../../../../../util/styles.dart';
-import '../controller/diesel_entry_controller.dart';
+import '../controller/fuel_entry_controller.dart';
 
-class DieselEntryAllList extends StatelessWidget {
-  final DieselEntryController controller = Get.put(DieselEntryController());
+class FuelEntryAllList extends StatelessWidget {
+  final FuelEntryController controller = Get.put(FuelEntryController());
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +49,18 @@ class DieselEntryAllList extends StatelessWidget {
                          Text("Vehicle Number : ${entry['xvmregno'] ?? 'Unknown'}",style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen,),),
                          Text("Driver Name : ${entry['xdriver'] ?? 'Unknown'}",style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen,)),
                          Text("Date: ${entry['xdate'] != null ? DateFormat('dd-MM-yyyy').format(DateTime.parse(entry['xdate'])) : 'null'}",style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen,)),
-                         Text("Fuel Quantity : ${entry['xqtyord'] ?? '0'} L",style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen,)),
+                         Text(
+                           "Fuel Type: ${entry['xtype'] ?? 'Unknown'}",
+                           style: quicksandRegular.copyWith(
+                             fontSize: Dimensions.fontSizeFourteen,
+                           ),
+                         ),
+                         Text(
+                           "Fuel Quantity : ${NumberFormat('0.0').format(double.tryParse(entry['xqtyord']?.toString() ?? '') ?? 0)} L",
+                           style: quicksandRegular.copyWith(
+                             fontSize: Dimensions.fontSizeFourteen,
+                           ),
+                         ),
                          Text("Pump Name : ${entry['xwh'] ?? "Unknown"} ",style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen,)),
                          Text("User ID : ${entry['zemail'] ?? "Unknown"} ",style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen,)),
                        ],

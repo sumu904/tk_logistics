@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tk_logistics/routes/routes.dart';
-
 import 'features/auth/login/controller/user_controller.dart';
-import 'features/screens/home/create_trip/tms/controller/tms_controller.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
