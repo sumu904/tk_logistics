@@ -11,7 +11,8 @@ class RoutesName {
   static const String createTripScreen = '/CreateTripScreen';
   static const String quotationScreen = '/QuotationScreen';
   static const String tripHistoryScreen = '/TripHistoryScreen';
-  static const String proofOfDeliveryScreen = '/ProofOfDeliveryScreen';
+  static const String proofOfDeliveryScreenTms = '/ProofOfDeliveryScreenTms';
+  static const String proofOfDeliveryScreen3ms = '/ProofOfDeliveryScreen3ms';
   static const String fuelEntryList = '/FuelEntryList';
   static const String updateTmsTrip = '/UpdateTmsTrip';
   static const String update3msTrip = '/Update3msTrip';
@@ -29,7 +30,8 @@ class RoutesName {
   static String getCreateTripScreen() => createTripScreen;
   static String getQuotationScreen() => quotationScreen;
   static String getTripHistoryScreen() => tripHistoryScreen;
-  static String getProofOfDeliveryScreen() => proofOfDeliveryScreen;
+  static String getProofOfDeliveryScreenTms() => proofOfDeliveryScreenTms;
+  static String getProofOfDeliveryScreen3ms() => proofOfDeliveryScreen3ms;
   static String getPFuelEntryList() => fuelEntryList;
   static String getUpdateTmsTrip() => updateTmsTrip;
   static String getUpdate3msTrip() => update3msTrip;

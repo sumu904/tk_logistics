@@ -19,7 +19,7 @@ class AppColor {
   static const Color spaceCadet = Color(0xff2e294e);
   static const Color orange = Color(0xfff46036);
   static const Color primaryOrange = Color(0xfffe853c);
-  static const Color yellow = Color(0xfff9dc5c);
+  static const Color yellow = Color(0xffff9dc06);
   static const Color crimson = Color(0xffd7263d);
   static const Color primaryRed = Color(0xFFDD1E1E);
   static const Color pink = Color(0xFFAF1740);

@@ -25,6 +25,13 @@ class MainFormController extends GetxController {
   var selectedSubType = RxnString();
   var isWorkshopNameEnabled = false.obs;
 
+  RxMap<String, dynamic> modifiedFormData = <String, dynamic>{}.obs;
+
+  void updateFormData(Map<String, dynamic> data) {
+    modifiedFormData.assignAll(data);
+  }
+
+
   var selectedVehicleNumbers = "".obs;
   var selectedDriverName = "".obs;
   var selectedDriverMobile = "".obs;
@@ -48,34 +55,63 @@ class MainFormController extends GetxController {
     fetchVehicleNumbers();
   }
   Future<void> fetchVehicleNumbers() async {
-    String apiUrl = "${baseUrl}/vehicle_list";
-    print("Fetching vehicle numbers from: $apiUrl");
+    int page = 1;
+    bool hasNextPage = true;
 
-    try {
-      final response = await http.get(Uri.parse(apiUrl));
+    vehicleData.clear(); // Clear before loading all pages
+    vehicleID.clear();
 
-      print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
+    while (hasNextPage) {
+      String apiUrl = "${baseUrl}/vehicle_list?page=$page";
+      print("Fetching vehicle numbers from: $apiUrl");
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        print("Decoded JSON: $data");
+      try {
+        final response = await http.get(Uri.parse(apiUrl));
+        print("Response Status Code: ${response.statusCode}");
+        print("Response Body: ${response.body}");
 
-        if (data.containsKey('results') && data['results'] is List) {
-          vehicleData.assignAll(List<Map<String, dynamic>>.from(data['results']));
-          vehicleID.assignAll(vehicleData.map((item) => item['xvehicle'].toString()).toList());
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          print("Decoded JSON (Page $page): $data");
 
-          print("Fetched Vehicle Numbers: $vehicleID");
+          if (data.containsKey('results') && data['results'] is List) {
+            final newVehicles = List<Map<String, dynamic>>.from(data['results']);
+
+            // Add new vehicles to vehicleData
+            vehicleData.addAll(newVehicles);
+
+            // Add vehicle numbers to vehicleID, ensuring no duplicates
+            for (var vehicle in newVehicles) {
+              String vehicleNumber = vehicle['xvehicle'].toString();
+              if (!vehicleID.contains(vehicleNumber)) {
+                vehicleID.add(vehicleNumber);
+              }
+            }
+
+            print("Fetched Vehicle Numbers (Page $page): ${newVehicles.map((v) => v['xvehicle'])}");
+          } else {
+            print("Unexpected API response format at page $page");
+            hasNextPage = false;
+          }
+
+          if (data['next'] != null) {
+            page++; // go to next page
+          } else {
+            hasNextPage = false; // no more pages
+          }
         } else {
-          print("Unexpected API Response Format for vehicle numbers");
+          print("Failed to fetch vehicle numbers on page $page");
+          hasNextPage = false;
         }
-      } else {
-        print("Failed to fetch vehicle numbers: ${response.statusCode}");
+      } catch (e) {
+        print("Error fetching vehicle numbers: $e");
+        hasNextPage = false;
       }
-    } catch (e) {
-      print("Error fetching vehicle numbers: $e");
     }
+
+    print(" All Vehicle Numbers Fetched (${vehicleID.length}): $vehicleID");
   }
+
 
   String? lastSelectedVehicle;
   String? lastSelectedVehicleNumbers;
@@ -186,26 +222,36 @@ class MainFormController extends GetxController {
 
   }
   Future<Map<String, dynamic>> collectMainFormDataLocally() async {
-    final data = {
-      "vehicle_code": selectedVehicle.value,
-      "vehicle_number": vehicleNumberController.text.trim(),
-      "driver_name": driverNameController.text.trim(),
-      "driver_phone": driverPhoneController.text.trim(),
-      "xdate": DateFormat('yyyy-MM-dd').format(selectedDate.value),
-      "workshop_type": selectedWorkshopType.value,
-      "workshop_name": selectedWorkshopType.value == "T.K. Central Workshop"
-          ? "N/A"
-          : workshopNameController.text.trim(),
-      "total_cost": costController.text.trim(),
-      "zemail": userController.user.value?.username,
-      "zid": 100000,
-      "Maintenance_details": [], // Still empty, can be filled on TaskInfo screen
-    };
+  // Collect the main form data
+  final data = {
+  "vehicle_code": selectedVehicle.value,
+  "vehicle_number": vehicleNumberController.text.trim(),
+  "driver_name": driverNameController.text.trim(),
+  "driver_phone": driverPhoneController.text.trim(),
+  "xdate": DateFormat('yyyy-MM-dd').format(selectedDate.value),
+  "workshop_type": selectedWorkshopType.value,
+  "workshop_name": selectedWorkshopType.value == "T.K. Central Workshop"
+  ? "T.K. Central Workshop"
+      : workshopNameController.text.trim(),
+  "total_cost": costController.text.trim(),
+  "zemail": userController.user.value?.username,
+    "zid": 100010,
+  "Maintenance_details": [], // Still empty, can be filled on TaskInfo screen
+  };
 
-    return data;
+  modifiedFormData.assignAll(data);
+
+  // Remove the 'Maintenance_details' field
+  modifiedFormData.remove('Maintenance_details');
+
+  // Print the modified map for debugging
+  print("Modified form data: $modifiedFormData");
+
+  return modifiedFormData;
   }
 
- void clearFields() {
+
+  void clearFields() {
     costController.clear();
     workshopNameController.clear();
     vehicleNumberController.clear();

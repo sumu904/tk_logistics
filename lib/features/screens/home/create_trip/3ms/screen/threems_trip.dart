@@ -8,6 +8,8 @@ import 'package:tk_logistics/util/dimensions.dart';
 import 'package:tk_logistics/util/styles.dart';
 
 import '../../../../../../common/widgets/custom_button.dart';
+import '../../../../../../common/widgets/custom_indicator.dart';
+import '../../../../../../common/widgets/loading_cntroller.dart';
 import '../../../../../../util/app_color.dart';
 import '../../../../../auth/login/controller/user_controller.dart';
 import '../../../home_screen.dart';
@@ -18,6 +20,8 @@ class ThreemsTrip extends StatelessWidget {
   final userController = Get.find<UserController>();
   final ThreemsController tripController = Get.put(ThreemsController());
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final loadingController = Get.find<LoadingController>();
+
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -212,15 +216,53 @@ class ThreemsTrip extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: CustomButton(
+                          child: Obx(() => loadingController.isCreatingTrip.value
+                              ? spinkit
+                              : CustomButton(
                             text: "Create Trip",
                             color: AppColor.neviBlue,
+                            height: 40,
+                            width: 180,
                             onTap: () {
                               if (_formKey.currentState!.validate()) {
-                                controller.createTrip();
+                                // Show confirmation dialog
+                                Get.dialog(
+                                  AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30), // Rounded corners for dialog
+                                    ),
+                                    backgroundColor: AppColor.mintGreenBG,
+                                    title: Text("Confirm",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeTwenty,color: AppColor.neviBlue)),
+                                    content: Text("Are you sure you want to create this trip?",style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeSixteen)),
+                                    actions: [
+                                      // No button
+                                      TextButton(
+                                        onPressed: () {
+                                          Get.back(); // Close the dialog
+                                        },
+                                        child: Text("No",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen,color: AppColor.primaryRed)),
+                                      ),
+                                      // Yes button
+                                      TextButton(
+                                        onPressed: () async {
+                                          Get.back(); // Close the dialog
+
+                                          // Run with loader and create the trip
+                                          await loadingController.runWithLoader(
+                                            loader: loadingController.isCreatingTrip,
+                                            action: () async {
+                                              await controller.createTrip();
+                                            },
+                                          );
+                                        },
+                                        child: Text("Yes",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen,color: AppColor.persianGreen)),
+                                      ),
+                                    ],
+                                  ),
+                                );
                               }
                             },
-                          ),
+                          ))
                         ),
                         Obx(() {
                           return Expanded(
@@ -310,14 +352,30 @@ class ThreemsTrip extends StatelessWidget {
           errorText: null,
           errorStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeTen),
           labelText: label,
-          labelStyle:
-          quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen,color: required? AppColor.primaryRed : AppColor.black),
+          labelStyle: quicksandRegular.copyWith(
+            fontSize: Dimensions.fontSizeFourteen,
+            color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+                ? AppColor.primaryRed
+                : AppColor.black, // or any color you want for filled state
+          ),
           focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
-              borderRadius: BorderRadius.circular(12)),
+            borderSide: BorderSide(
+              width: 1.5,
+              color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+                  ? AppColor.primaryRed
+                  : AppColor.neviBlue,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
           enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(width: 1.5, color: required? AppColor.primaryRed : AppColor.green),
-              borderRadius: BorderRadius.circular(12)),
+            borderSide: BorderSide(
+              width: 1.5,
+              color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+                  ? AppColor.primaryRed
+                  : AppColor.neviBlue,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
@@ -449,13 +507,10 @@ class ThreemsTrip extends StatelessWidget {
 
               SizedBox(height: 10,),
 
-              TextButton(
-                onPressed: () => Get.back(),
-                child: Text("CLOSE",
-                    style: quicksandSemibold.copyWith(
-                        fontSize: Dimensions.fontSizeSixteen,
-                        color: AppColor.primaryRed)),
-              ),
+              CustomButton(
+                  onTap: () => Get.back(),
+                  text: "OK",
+                  width: 80),
             ],
           ),
         ),
@@ -610,11 +665,10 @@ class ThreemsTrip extends StatelessWidget {
 
               SizedBox(height: 10),
 
-              // Close Button
-              TextButton(
-                onPressed: () => Get.back(),
-                child: Text("CLOSE", style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeSixteen, color: AppColor.primaryRed)),
-              ),
+              CustomButton(
+                  onTap: () => Get.back(),
+                  text: "OK",
+                  width: 80),
             ],
           ),
         ),
@@ -648,68 +702,82 @@ class ThreemsTrip extends StatelessWidget {
   }
 
   /// 🔹 Standard Text Field with Validation
-  Widget buildTextField(String label,
+  Widget buildTextField(
+      String label,
       TextEditingController controller, {
         bool required = false,
         bool isNumeric = false,
         bool isLabel = false,
-        bool isDefault = false, // Add this parameter to check if default value should be used
+        bool isDefault = false,
       }) {
-    // Set default value only if the controller is empty and isDefault is true
     if (isDefault && controller.text.isEmpty) {
-      controller.text =
-      "1"; // Set default value if isDefault is true and text is empty
+      controller.text = "1";
     }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextFormField(
-        maxLines: isLabel ? 2 : null,
-        decoration: InputDecoration(
-          errorText: null,
-          errorStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeTen),
-          hintText: isLabel ? "Cannot exceed more than 250 words" : null,
-          hintStyle: quicksandRegular.copyWith(
-              fontSize: Dimensions.fontSizeFourteen),
-          labelStyle: quicksandRegular.copyWith(
-              fontSize: Dimensions.fontSizeFourteen,color: required? AppColor.primaryRed : AppColor.black),
-          labelText: label,
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(width: 1.5, color: required? AppColor.primaryRed : AppColor.green),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
-          ),
-        ),
-        controller: controller,
-        keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
-        inputFormatters: isDefault
-            ? [FilteringTextInputFormatter.digitsOnly]
-            : [],
-        style: quicksandSemibold.copyWith(
-          fontSize: Dimensions.fontSizeFourteen,
-          // Ensure text is not bold
-        ),
-        onChanged: (value) {
-          // If the user changes the value, remove the default "1" if entered
-          if (isDefault && value == "1") {
-            controller.text = ""; // Clear default value once user starts typing
-          }
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: controller,
+        builder: (context, value, child) {
+          bool isFieldEmpty = value.text.isEmpty;
+
+          return TextFormField(
+            maxLines: isLabel ? 2 : null,
+            decoration: InputDecoration(
+              errorText: null,
+              errorStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeTen),
+              hintText: isLabel ? "Cannot exceed more than 250 words" : null,
+              hintStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen),
+              labelStyle: quicksandRegular.copyWith(
+                fontSize: Dimensions.fontSizeFourteen,
+                color: (required && isFieldEmpty) ? AppColor.primaryRed : AppColor.black,
+              ),
+              labelText: label,
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                  width: 1.5,
+                  color: (required && isFieldEmpty) ? AppColor.primaryRed : AppColor.neviBlue,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                  width: 1.5,
+                  color: (required && isFieldEmpty) ? AppColor.primaryRed : AppColor.green,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
+              ),
+            ),
+            controller: controller,
+            keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
+            inputFormatters: isDefault ? [FilteringTextInputFormatter.digitsOnly] : [],
+            style: quicksandSemibold.copyWith(
+              fontSize: Dimensions.fontSizeFourteen,
+            ),
+            onChanged: (value) {
+              if (isDefault && value.isEmpty) {
+                controller.text = "";
+                controller.selection = TextSelection.fromPosition(TextPosition(offset: controller.text.length));
+              }
+            },
+            validator: required
+                ? (value) {
+              if (value == null || value.isEmpty) {
+                return 'This field is required';
+              }
+              return null;
+            }
+                : null,
+          );
         },
-        validator: required
-            ? (value) =>
-        (value == null || value.isEmpty) ? "Please select $label" : null
-            : null,
       ),
     );
   }

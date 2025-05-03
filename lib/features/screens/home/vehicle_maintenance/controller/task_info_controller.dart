@@ -8,195 +8,215 @@ import 'package:tk_logistics/features/screens/home/vehicle_maintenance/controlle
 import '../../../../../const/const_values.dart';
 import '../../../../../util/app_color.dart';
 import '../../../../auth/login/controller/user_controller.dart';
-import 'main_form_controller.dart';
+import 'package:collection/collection.dart';
 
 
 class TaskInfoController extends GetxController {
   var maintenanceID = ''.obs;
   RxMap<String, dynamic> maintenanceData = <String, dynamic>{}.obs;
+
   final userController = Get.find<UserController>();
+  final MainFormController mainFormController = Get.find<MainFormController>();
+
+  RxMap<String, dynamic> modifiedFormData = <String, dynamic>{}.obs;
+
+
   final TextEditingController vehicleNumberController = TextEditingController();
   final TextEditingController driverNameController = TextEditingController();
   final TextEditingController driverPhoneController = TextEditingController();
-  var maintenanceDateController = TextEditingController();
-  var workshopNameController = TextEditingController();
-  var costController = TextEditingController();
+  final maintenanceDateController = TextEditingController();
+  final workshopNameController = TextEditingController();
+  final costController = TextEditingController();
+
   var selectedVehicle = RxnString();
   var selectedWorkshopType = RxnString();
   var selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).obs;
-  RxList<String> maintenanceTypes = [
-    "Engine Check",
-    "Tyre Change",
-    "Oil Change"
-  ].obs;
 
-  RxMap<String, List<String>> subTypeMap = {
-    "Engine Check": ["Engine Check1", "Engine Check2"],
-    "Tyre Change": ["Front Left", "Front Right", "Rear Left", "Rear Right"],
-    "Oil Change": ["Oil Change1", "Oil Change2", "Oil Change3"],
-  }.obs;
-
+  RxList<String> maintenanceTypes = <String>[].obs;
+  RxMap<String, List<String>> subTypeMap = <String, List<String>>{}.obs;
   RxList<String> subTypes = <String>[].obs;
   RxnString selectedMaintenanceType = RxnString();
-  RxnString selectedSubType = RxnString();
-  var remarksController = TextEditingController();
+  RxList<String> selectedSubType = <String>[].obs;
+  RxnString selectedTyreChangeType = RxnString();
+  RxList<String> tyreChangeTypes = RxList<String>();
+  RxnString selectedTyreConditionType = RxnString();
+  RxList<String> tyreConditionTypes = <String>[].obs;
+  final remarksController = TextEditingController();
 
-  // Tyre Change Details
+  // Tyre Replacement Fields
   RxnString tyreChangeReason = RxnString();
-  var oldTyreSNController = TextEditingController();
+  final oldTyreSNController = TextEditingController();
   RxnString newTyreCondition = RxnString();
-  var newTyreSNController = TextEditingController();
+  final newTyreSNController = TextEditingController();
 
-  // Determines if Tyre Change UI should be shown
-  RxBool isTyreChange = false.obs;
-
-  // List to store entries
+  RxBool isTyreReplacement = false.obs;
   var entries = <Map<String, String>>[].obs;
 
-  bool isMounted = false; // Flag to track widget mount status
-  bool isSubmitting = false; // Prevent multiple submissions
+
+  bool isMounted = false;
+  bool isSubmitting = false;
+  var areSubTypesFetched = false.obs;
 
   @override
   void onInit() {
     super.onInit();
-    isMounted = true; // Set as mounted when controller is initialized
+
+    ever(mainFormController.modifiedFormData, (data) {
+      modifiedFormData.assignAll(data);
+    });
+
+    // Listen for changes in selectedMaintenanceType
     ever(selectedMaintenanceType, (_) => updateDependentSubTypes());
+
+    // Fetch maintenance types and subtypes
+    fetchMaintenanceTypes();
+    fetchSubTypes();
+    fetchTyreChangeTypes();
+    fetchTyreConditionTypes();
   }
 
   @override
   void onClose() {
-    isMounted = false; // Set as unmounted when controller is disposed
+    isMounted = false;
     super.onClose();
   }
 
-  void updateDependentSubTypes() {
-    if (selectedMaintenanceType.value != null) {
-      subTypes.value = subTypeMap[selectedMaintenanceType.value] ?? [];
-    } else {
-      subTypes.clear();
-    }
-
-    // Reset subtype selection
-    selectedSubType.value = null;
-
-    // Update tyre change UI visibility
-    isTyreChange.value = selectedMaintenanceType.value == "Tyre Change";
+  void showSnack(String title, String message, Color color) {
+    Get.snackbar(
+      title, message,
+      snackPosition: SnackPosition.TOP,
+      colorText: AppColor.white,
+      backgroundColor: color,
+    );
   }
 
-  final MainFormController mainFormController = Get.find<MainFormController>();
-
-
-  Future<void> submitMaintenanceData() async {
-    if (isSubmitting) {
-      Get.snackbar("Info", "Already submitting data, please wait.");
-      return;
-    }
-
-    if (entries.isEmpty) {
-      Get.snackbar("Error", "No maintenance records to submit.");
-      return;
-    }
-
-    if (maintenanceID.value.isEmpty) {
-      Get.snackbar("Error", "Missing maintenance ID. Submit main form first.");
-      return;
-    }
-
-    isSubmitting = true;
-
-    print("Maintenance ID: $maintenanceID");
-
-    final url = Uri.parse('${baseUrl}/maintenanceheader/');
-
-    final data = {
-      "zid": 100000,
-      //"maintenance_no": maintenanceID.value,
-      "vehicle_code": selectedVehicle.value,
-      "vehicle_number": vehicleNumberController.text,
-      "driver_name": driverNameController.text,
-      "driver_phone": driverPhoneController.text,
-      "xdate": DateFormat('yyyy-MM-dd').format(selectedDate.value),
-      "workshop_type": selectedWorkshopType.value,
-      "workshop_name": workshopNameController.text,
-      "zemail": userController.user.value?.username,
-      "total_cost": double.tryParse(costController.text) ?? 0.0,
-      "Maintenance_details": entries.map((entry) {
-        return {
-          "maintenance_type": entry["Maintenance Type"],
-          "sub_type": entry["Sub Type"] ?? "",
-          "remarks": entry["Remarks"],
-          "tyre_change_reason": entry["Reason"] ?? "",
-          "old_tyre_sn": entry["Old Tyre SN"] ?? "",
-          "new_tyre_condition": entry["New Tyre Condition"] ?? "",
-          "new_tyre_sn": entry["New Tyre SN"] ?? "",
-        };
-      }).toList()
-    };
-
-    print(" Data to be sent: ${jsonEncode(data)}");
-
+  Future<void> fetchMaintenanceTypes() async {
     try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(data),
-      );
-      print(" Response status: ${response.statusCode}");
-      print(" Response body: ${response.body}");
+      final response = await http.get(Uri.parse('${baseUrl}/dropdown_list?xtype=Maintenance_Type'));
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        Get.snackbar("Success", "Maintenance details updated successfully!",
-          snackPosition: SnackPosition.TOP,
-          colorText: AppColor.white,
-          backgroundColor: AppColor.seaGreen,
-        );
-        entries.clear();
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        if (jsonResponse is Map && jsonResponse.containsKey('results')) {
+          final results = jsonResponse['results'] as List;
+          maintenanceTypes.value = results.map((item) => item['xcode'].toString()).toList();
+        } else {
+          showSnack("Error", "Invalid response format", AppColor.primaryRed);
+        }
       } else {
-        Get.snackbar("Error", "Failed to update details: ${response.headers}",
-          snackPosition: SnackPosition.TOP,
-          colorText: AppColor.white,
-          backgroundColor: AppColor.primaryRed,
-        );
+        showSnack("Error", "Failed to load maintenance types", AppColor.primaryRed);
       }
     } catch (e) {
-      Get.snackbar("Error", "Exception: $e",
-        snackPosition: SnackPosition.TOP,
-        colorText: AppColor.white,
-        backgroundColor: AppColor.primaryRed,
-      );
-    } finally {
-      isSubmitting = false;
+      showSnack("Error", "Exception: $e", AppColor.primaryRed);
     }
   }
 
-  // Set the maintenance ID (after main form submission)
-  void setMaintenanceID(String id) {
+  Future<void> fetchSubTypes() async {
+    try {
+      // Fetch Tyre Replacement subtypes
+      final tyreResponse = await http.get(Uri.parse('${baseUrl}/dropdown_list?xtype=Maintenance_subType&xcodealt=1'));
+      // Fetch other maintenance subtypes
+      final otherResponse = await http.get(Uri.parse('${baseUrl}/dropdown_list?xtype=Maintenance_subType&xcodealt=0'));
+
+      if (tyreResponse.statusCode == 200 && otherResponse.statusCode == 200) {
+        final tyreJson = jsonDecode(tyreResponse.body);
+        final otherJson = jsonDecode(otherResponse.body);
+
+        if (tyreJson.containsKey('results') && otherJson.containsKey('results')) {
+          // Tyre Replacement types
+          subTypeMap["Tyre Replacement"] = List<String>.from(tyreJson['results'].map((item) => item['xcode'].toString()));
+
+          // Other types — REMOVE DUPLICATES
+          final otherList = List<String>.from(otherJson['results'].map((item) => item['xcode'].toString()));
+
+          // Use Set to remove duplicates
+          subTypeMap["Other"] = otherList.toSet().toList();
+
+          areSubTypesFetched.value = true;
+        } else {
+          showSnack("Error", "Invalid subtype response", AppColor.primaryRed);
+        }
+      } else {
+        showSnack("Error", "Failed to fetch subtypes", AppColor.primaryRed);
+      }
+    } catch (e) {
+      showSnack("Error", "Exception: $e", AppColor.primaryRed);
+    }
+  }
+
+  Future<void> fetchTyreChangeTypes() async {
+    try {
+      final response = await http.get(Uri.parse('http://103.250.68.75/api/v1/dropdown_list?xtype=Tyre_Change'));
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        if (jsonResponse is Map && jsonResponse.containsKey('results')) {
+          final results = jsonResponse['results'] as List;
+          tyreChangeTypes.value = results.map((item) => item['xcode'].toString()).toList();
+        } else {
+          showSnack("Error", "Invalid response format", AppColor.primaryRed);
+        }
+      } else {
+        showSnack("Error", "Failed to load tyre change types", AppColor.primaryRed);
+      }
+    } catch (e) {
+      showSnack("Error", "Exception: $e", AppColor.primaryRed);
+    }
+  }
+
+  // Function to fetch Tyre Condition Types
+  Future<void> fetchTyreConditionTypes() async {
+    try {
+      final response = await http.get(Uri.parse('http://103.250.68.75/api/v1/dropdown_list?xtype=Tyre_Condition'));
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        if (jsonResponse is Map && jsonResponse.containsKey('results')) {
+          final results = jsonResponse['results'] as List;
+          tyreConditionTypes.value = results.map((item) => item['xcode'].toString()).toList();
+        } else {
+          showSnack("Error", "Invalid response format", AppColor.primaryRed);
+        }
+      } else {
+        showSnack("Error", "Failed to load tyre condition types", AppColor.primaryRed);
+      }
+    } catch (e) {
+      showSnack("Error", "Exception: $e", AppColor.primaryRed);
+    }
+  }
+
+
+
+
+  void updateDependentSubTypes() {
+    if (!areSubTypesFetched.value) return; // Wait until subtypes are fetched
+
+    // First CLEAR old subtypes
+    subTypes.clear();
+    selectedSubType.clear(); // Also clear selected subtypes
+
+    if (selectedMaintenanceType.value == "Tyre Replacement") {
+      subTypes.assignAll(subTypeMap["Tyre Replacement"] ?? []);
+      isTyreReplacement.value = true;
+    } else {
+      subTypes.assignAll(subTypeMap["Other"] ?? []);
+      isTyreReplacement.value = false;
+    }
+
+    print("Updated Subtypes for ${selectedMaintenanceType.value}: $subTypes");
+  }
+
+
+
+ /* void setMaintenanceID(String id) {
     maintenanceID.value = id;
-  }
+  }*/
 
-  // Adds entry to entries list
-  void addEntry() {
-    print(" Attempting to add entry");
-    print(" Controller instance: ${this.hashCode}");
-    print(" Entries BEFORE add: ${entries.length}");
-    print(" Current entries: $entries");
-   // entries.add({...});
-    print(" Entries AFTER add: ${entries.length}");
-    print(" Updated entries: $entries");
-
-
-    if (selectedMaintenanceType.value == null || selectedSubType.value?.isEmpty != false) {
-      Get.snackbar("Error", "Please fill all required fields",
-        snackPosition: SnackPosition.TOP,
-        colorText: AppColor.white,
-        backgroundColor: AppColor.primaryRed,
-      );
-      return;
-    }
+   addEntry() {
+    if (!validateEntryForm()) return;
 
     final newEntry = {
       "Maintenance Type": selectedMaintenanceType.value ?? "",
-      "Sub Type": selectedSubType.value ?? "",
+      "Sub Type": selectedSubType.join(", "),
       "Remarks": remarksController.text.trim(),
       "Reason": tyreChangeReason.value ?? "",
       "Old Tyre SN": oldTyreSNController.text.trim(),
@@ -204,48 +224,101 @@ class TaskInfoController extends GetxController {
       "New Tyre SN": newTyreSNController.text.trim(),
     };
 
-    // Check for duplicates
+
+    final entryString = newEntry.map((k, v) => MapEntry(k, v.toString()));
+
     bool alreadyExists = entries.any((entry) =>
-    entry["Maintenance Type"] == newEntry["Maintenance Type"] &&
-        entry["Sub Type"] == newEntry["Sub Type"] &&
-        entry["Remarks"] == newEntry["Remarks"] &&
-        entry["Reason"] == newEntry["Reason"] &&
-        entry["Old Tyre SN"] == newEntry["Old Tyre SN"] &&
-        entry["New Tyre Condition"] == newEntry["New Tyre Condition"] &&
-        entry["New Tyre SN"] == newEntry["New Tyre SN"]
-    );
+        MapEquality().equals(entry, entryString));
 
     if (alreadyExists) {
-      Get.snackbar("Warning", "This record already exists!",
-        snackPosition: SnackPosition.TOP,
-        colorText: AppColor.white,
-        backgroundColor: AppColor.primaryRed,
-      );
+      showSnack("Warning", "This record already exists!", AppColor.primaryRed);
       return;
     }
 
-    // Save record
-    entries.add(newEntry);
-
-    Get.snackbar("Success", "Record successfully added!",
-      snackPosition: SnackPosition.TOP,
-      colorText: AppColor.white,
-      backgroundColor: AppColor.seaGreen,
-    );
-
+    entries.add(entryString);
+    showSnack("Success", "Record successfully added!", AppColor.seaGreen);
     clearFields();
   }
 
+  bool validateEntryForm() {
+    if (selectedMaintenanceType.value == null || selectedSubType.value?.isEmpty != false) {
+      showSnack("Error", "Please fill all required fields", AppColor.primaryRed);
+      return false;
+    }
+    return true;
+  }
 
   void clearFields() {
     selectedMaintenanceType.value = null;
-    selectedSubType.value = null;
+    selectedSubType.clear();
     remarksController.clear();
-    newTyreCondition.value = null;
     tyreChangeReason.value = null;
-    isTyreChange.value = false; // Reset tyre change visibility
+    oldTyreSNController.clear();
+    newTyreCondition.value = null;
+    newTyreSNController.clear();
+    subTypes.clear();
+    isTyreReplacement.value = false;
+  }
+
+  Future<void> submitMaintenanceData() async {
+    if (isSubmitting) {
+      showSnack("Info", "Already submitting, please wait.", AppColor.primaryRed);
+      return;
+    }
+
+    if (entries.isEmpty) {
+      showSnack("Error", "No records to submit.", AppColor.primaryRed);
+      return;
+    }
+
+    if (maintenanceID.value == null || maintenanceID.value.trim().isEmpty) {
+      showSnack("Error", "Missing maintenance ID. Submit main form first.", AppColor.primaryRed);
+      return;
+    }
+
+    isSubmitting = true;
+
+    final url = Uri.parse('${baseUrl}/maintenanceheader/');
+    final data = {
+      "zid": 100010,
+      "vehicle_code": selectedVehicle.value,
+      "vehicle_number": vehicleNumberController.text,
+      "driver_name": driverNameController.text,
+      "driver_phone": driverPhoneController.text,
+      "xdate": DateFormat('yyyy-MM-dd').format(selectedDate.value),
+      "workshop_type": selectedWorkshopType.value,
+      "workshop_name": workshopNameController.text,
+      "zemail": userController.user.value?.username ?? '',
+      "total_cost": double.tryParse(costController.text) ?? 0.0,
+      "Maintenance_details": entries.map((entry) => {
+        "maintenance_type": entry["Maintenance Type"],
+        "sub_type": entry["Sub Type"] ?? "",
+        "remarks": entry["Remarks"],
+        "tyre_change_reason": entry["Reason"] ?? "",
+        "old_tyre_sn": entry["Old Tyre SN"] ?? "",
+        "new_tyre_condition": entry["New Tyre Condition"] ?? "",
+        "new_tyre_sn": entry["New Tyre SN"] ?? "",
+      }).toList()
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(data),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        showSnack("Success", "Maintenance details submitted successfully!", AppColor.seaGreen);
+        entries.clear();
+      } else {
+        showSnack("Error", "Failed to submit: ${response.body}", AppColor.primaryRed);
+      }
+    } catch (e) {
+      showSnack("Error", "Exception: $e", AppColor.primaryRed);
+    } finally {
+      isSubmitting = false;
+    }
   }
 }
-
-
 

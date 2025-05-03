@@ -4,13 +4,17 @@ import 'package:intl/intl.dart';
 import 'package:tk_logistics/features/screens/home/vehicle_maintenance/controller/entry_list_controller.dart';
 
 import '../../../../../common/widgets/custom_button.dart';
+import '../../../../../common/widgets/custom_indicator.dart';
+import '../../../../../common/widgets/loading_cntroller.dart';
 import '../../../../../util/app_color.dart';
+import '../../../../../util/date_utils.dart';
 import '../../../../../util/dimensions.dart';
 import '../../../../../util/styles.dart';
 
 class EntryListScreen extends StatelessWidget {
   final controller = Get.put(EntryListController());
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final loadingController = Get.find<LoadingController>();
 
   // Date format
   final dateFormat = DateFormat('yyyy-MM-dd');
@@ -31,15 +35,13 @@ class EntryListScreen extends StatelessWidget {
                   // Date Range Fields
                   Row(
                     children: [
-                      // Expanded to make the DateField take up equal space in the Row
                       Expanded(
-                        child: buildDateField("From Date", controller.selectedFromDate, controller.fromDateController),
+                        child: buildDateField("From Date", controller.selectedFromDate, controller.fromDateController, isFromDate: true),
                       ),
-                      SizedBox(width: 10,),
+                      SizedBox(width: 10),
                       Expanded(
                         child: buildDateField("To Date", controller.selectedToDate, controller.toDateController),
                       ),
-
                     ],
                   ),
 
@@ -55,12 +57,22 @@ class EntryListScreen extends StatelessWidget {
 
                   // Submit Button
                   Center(
-                    child: CustomButton(
+                    child: Obx(() => loadingController.isSubmitting.value
+                        ? spinkit
+                        : CustomButton(
                       onTap: () {
-                        controller.filterEntries();
+                        loadingController.runWithLoader(
+                          loader: loadingController.isSubmitting,
+                          action: () async {
+                            controller.filterEntries();
+                            await Future.delayed(Duration(milliseconds: 500));
+                          },
+                        );
                       },
                       text: "Submit",
                     ),
+                    )
+
                   ),
 
                   SizedBox(height: 20),
@@ -74,56 +86,55 @@ class EntryListScreen extends StatelessWidget {
         ));
   }
 
-  // Reusable Date Field
-  Widget buildDateField(String label, Rxn<DateTime> selectedDate, TextEditingController dateController) {
-    return GestureDetector(
+  Widget buildDateField(String label, Rx<DateTime> selectedDate, TextEditingController controller, {bool isFromDate = false}) {
+    return TextFormField(
+      style: quicksandSemibold.copyWith(
+          fontSize: Dimensions.fontSizeFourteen,
+          color:AppColor.black),
+      controller: controller,
+      readOnly: true,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: quicksandRegular.copyWith(
+            fontSize: Dimensions.fontSizeFourteen,
+            color:AppColor.black),
+        focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
+            borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(
+                width: 1.5,
+                color:  AppColor.green),
+            borderRadius: BorderRadius.circular(12)),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
+        ),
+        contentPadding: EdgeInsets.symmetric(
+            horizontal: Dimensions.paddingSizeTwelve,
+            vertical: Dimensions.paddingSizeFourteen),
+        suffixIcon: Icon(Icons.calendar_today, color: AppColor.green),
+      ),
       onTap: () async {
+        DateTime now = DateTime.now();
         DateTime? pickedDate = await showDatePicker(
           context: Get.context!,
-          initialDate: selectedDate.value ?? DateTime.now(),
+          initialDate: selectedDate.value,
           firstDate: DateTime(2000),
-          lastDate: DateTime(2101),
+          lastDate: isFromDate ? now : DateTime(2100),
         );
+
         if (pickedDate != null) {
           selectedDate.value = pickedDate;
-          dateController.text = DateFormat('yyyy-MM-dd').format(pickedDate);
+          controller.text = formatDate(pickedDate);
         }
       },
-      child: AbsorbPointer(
-        child: TextFormField(
-          controller: dateController,
-          decoration: InputDecoration(
-            labelText: label,
-            labelStyle: quicksandRegular.copyWith(
-                fontSize: Dimensions.fontSizeFourteen,
-                color:AppColor.black),
-            focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
-                borderRadius: BorderRadius.circular(12)),
-            enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                    width: 1.5,
-                    color:  AppColor.green),
-                borderRadius: BorderRadius.circular(12)),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-                horizontal: Dimensions.paddingSizeTwelve,
-                vertical: Dimensions.paddingSizeFourteen),
-            suffixIcon: Icon(Icons.calendar_today, color: AppColor.green),
-            // Add other styling as needed
-          ),
-        ),
-      ),
     );
   }
-
 
   // Reusable Searchable Dropdown
   Widget buildSearchableDropdown(
@@ -277,13 +288,10 @@ class EntryListScreen extends StatelessWidget {
                 SizedBox(height: 10),
 
                 // Close Button
-                TextButton(
-                  onPressed: () => Get.back(),
-                  child: Text("CLOSE",
-                      style: quicksandSemibold.copyWith(
-                          fontSize: Dimensions.fontSizeSixteen,
-                          color: AppColor.primaryRed)),
-                ),
+                CustomButton(
+                    onTap: () => Get.back(),
+                    text: "OK",
+                    width: 80),
               ],
             ),
           ),
@@ -298,14 +306,22 @@ class EntryListScreen extends StatelessWidget {
       return Center(child: Text("No Entries found for the selected criteria."));
     }
 
+    // Calculate total cost
+    double totalCost = 0;
+    for (var entry in entries) {
+      final cost = double.tryParse(entry["Cost"] ?? "0") ?? 0;
+      totalCost += cost;
+    }
+
     return Container(
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(5),
-          border: Border.all(width: 1, color: AppColor.neviBlue)),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(width: 1, color: AppColor.neviBlue),
+      ),
       child: DataTable(
         columnSpacing: 10,
         headingRowColor:
-            MaterialStateColor.resolveWith((states) => AppColor.neviBlue),
+        MaterialStateColor.resolveWith((states) => AppColor.neviBlue),
         columns: [
           DataColumn(
               label: Expanded(
@@ -333,31 +349,53 @@ class EntryListScreen extends StatelessWidget {
                           color: AppColor.white)))),
           DataColumn(
               label: Expanded(
-                  child: Text("Cost",
+                  child: Text("Cost",textAlign: TextAlign.right,
                       style: quicksandBold.copyWith(
                           fontSize: Dimensions.fontSizeFourteen,
                           color: AppColor.white)))),
         ],
-        rows: entries.map((entry) {
-          return DataRow(cells: [
-            DataCell(Text(entry["Date"] ?? "",
-                style: quicksandRegular.copyWith(
-                    fontSize: Dimensions.fontSizeFourteen))),
-            DataCell(Align(
-                alignment: Alignment.center,
-                child: Text(entry["Vehicle Code"] ?? "",
+        rows: [
+          ...entries.map((entry) {
+            return DataRow(cells: [
+              DataCell(Text(entry["Date"] ?? "",
+                  style: quicksandRegular.copyWith(
+                      fontSize: Dimensions.fontSizeFourteen))),
+              DataCell(Align(
+                  alignment: Alignment.center,
+                  child: Text(entry["Vehicle Code"] ?? "",
+                      style: quicksandRegular.copyWith(
+                          fontSize: Dimensions.fontSizeFourteen)))),
+              DataCell(Align(
+                  alignment: Alignment.center,
+                  child: Text(entry["Workshop Type"] ?? "",textAlign: TextAlign.center,overflow: TextOverflow.ellipsis,maxLines: 2,
+                      style: quicksandRegular.copyWith(
+                          fontSize: Dimensions.fontSizeFourteen)))),
+              DataCell(Align(alignment: Alignment.centerRight,
+                child: Text(entry["Cost"] ?? "",
                     style: quicksandRegular.copyWith(
-                        fontSize: Dimensions.fontSizeFourteen)))),
-            DataCell(Align(
-                alignment: Alignment.center,
-                child: Text(entry["Workshop Type"] ?? "",
-                    style: quicksandRegular.copyWith(
-                        fontSize: Dimensions.fontSizeFourteen)))),
-            DataCell(Text(entry["Cost"] ?? "",
-                style: quicksandRegular.copyWith(
-                    fontSize: Dimensions.fontSizeFourteen))),
-          ]);
-        }).toList(),
+                        fontSize: Dimensions.fontSizeFourteen)),
+              )),
+            ]);
+          }).toList(),
+
+          // 👇 Add total row
+          DataRow(
+            color: MaterialStateProperty.resolveWith<Color?>(
+                    (Set<MaterialState> states) => AppColor.neviBlue.withOpacity(0.1)),
+            cells: [
+              DataCell(Text("")),
+              DataCell(Text("")),
+              DataCell(Text("Total:",
+                  style: quicksandBold.copyWith(
+                      fontSize: Dimensions.fontSizeFourteen))),
+              DataCell(Text(
+                totalCost.toStringAsFixed(2),
+                style: quicksandBold.copyWith(
+                    fontSize: Dimensions.fontSizeFourteen),
+              )),
+            ],
+          )
+        ],
       ),
     );
   }

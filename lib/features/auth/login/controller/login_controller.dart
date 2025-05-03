@@ -5,6 +5,7 @@ import 'package:tk_logistics/features/screens/home/home_screen.dart';
 import '../../../../util/app_color.dart';
 import '../../../screens/home/trip_history/controller/trip_history_controller.dart';
 import '../api/login_api.dart';
+import '../api/model/user.dart';
 import 'user_controller.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,7 +25,7 @@ class LoginController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadCredentials(); // Load saved credentials when the controller is initialized
+    loadCredentials(); // Load saved credentials
   }
 
   @override
@@ -33,6 +34,36 @@ class LoginController extends GetxController {
     passwordController.dispose();
     super.onClose();
   }
+
+  // New Method to check login status when app starts
+  Future<bool> checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Check if the user is logged in
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    if (isLoggedIn) {
+      // Retrieve user data
+      String? firstName = prefs.getString('firstName');
+      String? lastName = prefs.getString('lastName');
+      String? username = prefs.getString('username');
+      String? access = prefs.getString('access');
+
+      // Set the user data in the UserController
+      Get.find<UserController>().setUser(User(
+        firstName: firstName ?? '',
+        lastName: lastName ?? '',
+        username: username ?? '',
+        access: access ?? '',
+      ));
+
+      return true; // User is logged in
+    }
+
+    return false; // User is not logged in
+  }
+
+
 
   Future<void> login() async {
     isLoading(true);
@@ -48,11 +79,8 @@ class LoginController extends GetxController {
       if (user != null) {
         userController.setUser(user);
 
-        if (isChecked.value) {
-          await saveCredentials();
-        } else {
-          await clearCredentials(); // Clear saved credentials if Remember Me is unchecked
-        }
+        // Save the user data to SharedPreferences after successful login
+        await saveUserData(user);
 
         Get.offAll(() => HomeScreen());
         Get.snackbar(
@@ -84,11 +112,25 @@ class LoginController extends GetxController {
     }
   }
 
+
+  Future<void> saveUserData(User user) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString('firstName', user.firstName ?? '');
+    await prefs.setString('lastName', user.lastName ?? '');
+    await prefs.setString('username', user.username ?? '');
+    await prefs.setString('access', user.access ?? '');
+    await prefs.setBool('isLoggedIn', true);  // Save login status
+  }
+
+
+  // Save login info and isLoggedIn = true
   Future<void> saveCredentials() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', userNameController.text);
     await prefs.setString('password', passwordController.text);
     await prefs.setBool('rememberMe', true);
+    await prefs.setBool('isLoggedIn', true);
   }
 
   Future<void> clearCredentials() async {
@@ -96,6 +138,7 @@ class LoginController extends GetxController {
     await prefs.remove('username');
     await prefs.remove('password');
     await prefs.setBool('rememberMe', false);
+    await prefs.setBool('isLoggedIn', false);
   }
 
   Future<void> loadCredentials() async {
@@ -114,3 +157,4 @@ class LoginController extends GetxController {
     }
   }
 }
+

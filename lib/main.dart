@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tk_logistics/routes/routes.dart';
+import 'common/widgets/loading_cntroller.dart';
 import 'features/auth/login/controller/user_controller.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   Get.put(UserController());
+  Get.put(LoadingController());
   runApp(const MyApp());
 }
 

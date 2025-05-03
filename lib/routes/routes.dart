@@ -4,7 +4,8 @@ import 'package:tk_logistics/routes/routes_name.dart';
 import '../features/auth/login/login_screen.dart';
 import '../features/screens/home/challan/screen/challan_screen.dart';
 import '../features/screens/home/create_trip/create_trip_screen.dart';
-import '../features/screens/home/create_trip/pod/screen/proof_of_delivery_screen.dart';
+import '../features/screens/home/create_trip/pod/screen/proof_of_delivery_screen_3ms.dart';
+import '../features/screens/home/create_trip/pod/screen/proof_of_delivery_screen_tms.dart';
 import '../features/screens/home/create_trip/3ms/quotation/screen/quotation_screen.dart';
 import '../features/screens/home/dashboard/billing_unit_report/screen/billing_unit_report.dart';
 import '../features/screens/home/dashboard/dashboard_screen.dart';
@@ -79,8 +80,13 @@ class AppRoutes {
     ),
 
     GetPage(
-      name: RoutesName.proofOfDeliveryScreen,
-      page: () =>  ProofOfDeliveryScreen(),
+      name: RoutesName.proofOfDeliveryScreenTms,
+      page: () =>  ProofOfDeliveryScreenTms(),
+    ),
+
+    GetPage(
+      name: RoutesName.proofOfDeliveryScreen3ms,
+      page: () =>  ProofOfDeliveryScreen3ms(),
     ),
 
     GetPage(

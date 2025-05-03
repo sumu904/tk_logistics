@@ -7,11 +7,14 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
 import '../../../../../../../common/widgets/custom_button.dart';
+import '../../../../../../../common/widgets/custom_indicator.dart';
 import '../../../../../../../common/widgets/custom_outlined_button.dart';
+import '../../../../../../../common/widgets/loading_cntroller.dart';
 import '../../../../../../../routes/routes_name.dart';
 import '../../../../../../../util/app_color.dart';
 import '../../../../../../../util/dimensions.dart';
 import '../../../../../../../util/styles.dart';
+import '../../../../create_trip/pod/screen/proof_of_delivery_screen_3ms.dart';
 import '../../../controller/trip_history_controller.dart';
 import '../controller/update_3ms_controller.dart';
 
@@ -19,6 +22,7 @@ import '../controller/update_3ms_controller.dart';
 class Update3msTrip extends StatelessWidget {
   final Update3msController _controller = Get.put(Update3msController());
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final loadingController = Get.find<LoadingController>();
 
   Future<void> fetchDataFromApi(String apiUrl) async {
     try {
@@ -240,12 +244,16 @@ class Update3msTrip extends StatelessWidget {
                     buildTextField("Special Note", controller.noteController, isLabel: true),
                     SizedBox(height: 10,),
                     CustomOutlinedButton(
-                      text : "Proof of Delivery",
+                      text: "Proof of Delivery",
                       color: AppColor.green,
                       width: double.infinity,
                       height: 45,
-                      onTap: (){
-                        Get.toNamed("ProofOfDocumentScreen");
+                      onTap: () {
+                        //Get.toNamed("ProofOfDeliveryScreen");
+                        Get.to(() => ProofOfDeliveryScreen3ms(), arguments: {
+                          'tripId': tripNo,
+                          'tripPoD': Get.find<Update3msController>().tripPoD.value ?? '',
+                        });
                       },
                     ),
 
@@ -255,30 +263,46 @@ class Update3msTrip extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: CustomButton(
+                          child: Obx(() => loadingController.isUpdatingTrip.value
+                              ? spinkit
+                              : CustomButton(
                             text: "Update Trip",
                             color: AppColor.neviBlue,
                             height: 40,
                             width: 180,
                             onTap: () {
                               if (_formKey.currentState!.validate()) {
-                                controller.updateTrip(tripNo).then((_) {
-                                  // Trigger a refresh after updating the trip
-                                  Get.find<TripHistoryController>().fetchTrips();
-                                }
+                                loadingController.runWithLoader(
+                                  loader: loadingController.isUpdatingTrip,
+                                  action: () async {
+                                    await controller.updateTrip(tripNo);
+                                    await Future.delayed(Duration(milliseconds: 500));
+                                    Get.find<TripHistoryController>().fetchTrips();
+                                    Get.back();
+                                  },
                                 );
-                                Get.back();;
                               }
                             },
-                          ),
+                          ))
                         ),
                         Expanded(
-                          child: CustomButton(
+                          child: Obx(() => loadingController.isClosingTrip.value
+                              ? spinkit
+                              : CustomButton(
                             text: "Close Trip",
                             height: 40,
                             width: 180,
-                            onTap: ()=> Get.back(),
-                          ),
+                            onTap: () {
+                              loadingController.runWithLoader(
+                                loader: loadingController.isClosingTrip,
+                                action: () async {
+                                  // Optional: simulate a delay or do other closing operations
+                                  await Future.delayed(Duration(milliseconds: 500));
+                                  Get.back();
+                                },
+                              );
+                            },
+                          ))
                         ),
                         Expanded(
                             child: CustomButton(
@@ -498,14 +522,10 @@ class Update3msTrip extends StatelessWidget {
                   : SizedBox()),
 
               SizedBox(height: 10,),
-
-              TextButton(
-                onPressed: () => Get.back(),
-                child: Text("CLOSE",
-                    style: quicksandSemibold.copyWith(
-                        fontSize: Dimensions.fontSizeSixteen,
-                        color: AppColor.primaryRed)),
-              ),
+              CustomButton(
+                  onTap: () => Get.back(),
+                  text: "OK",
+                  width: 80),
             ],
           ),
         ),
@@ -677,13 +697,10 @@ void showMultiSelectDialog(
 
             SizedBox(height: 10),
 
-            // Close Button
-            TextButton(
-              onPressed: () => Get.back(),
-              child: Text("CLOSE", style: quicksandSemibold.copyWith(
-                  fontSize: Dimensions.fontSizeSixteen,
-                  color: AppColor.primaryRed)),
-            ),
+            CustomButton(
+                onTap: () => Get.back(),
+                text: "OK",
+                width: 80),
           ],
         ),
       ),

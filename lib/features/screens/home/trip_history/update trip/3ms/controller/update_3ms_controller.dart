@@ -10,12 +10,15 @@ import '../../../../../../auth/login/controller/user_controller.dart';
 
 class Update3msController extends GetxController {
   final userController = Get.find<UserController>();
+  RxString tripId = ''.obs;
+  RxString tripPoD = ''.obs;
   // Dropdown Selections
   RxList<String> locations = <String>[].obs;
   RxList<String> billingUnits = <String>[].obs;
   RxList<String> cargoTypes = <String>[].obs;
   RxList<String> segments = <String>[].obs;
   RxList<String> pickSuppliers = <String>[].obs;
+  var isDataLoading = false.obs;
 
   var from = RxnString();
   var to = RxnString();
@@ -74,7 +77,7 @@ class Update3msController extends GetxController {
       if (args.containsKey("tripNo")) {
         String tripNo = args["tripNo"];
         if (tripNo.isNotEmpty) {
-          fetchTripDetails(tripNo); // ✅ Call fetchTripDetails
+          fetchTripDetails(tripNo); //  Call fetchTripDetails
         }
       }
     }
@@ -134,6 +137,12 @@ class Update3msController extends GetxController {
                   tripType.value = tripData['xmovetype'] ?? '';
                   segment.value = tripData['xsagnum'] ?? '';
                   noteController.text = tripData['xrem'] ?? '';
+
+                  tripId.value = tripData['xsornum'] ?? '';
+                  tripPoD.value = tripData['xlink'] ?? '';
+
+                  print("Fetched Trip ID: ${tripId.value}");
+                  print("Fetched Trip PoD: ${tripPoD.value}");;
 
                   print("Fetched From: ${from.value}, To: ${to.value}");
                   update(); // Refresh UI

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:tk_logistics/features/auth/login/controller/user_controller.dart';
 import 'dart:convert';
 
@@ -16,14 +17,14 @@ class FuelEntryController extends GetxController {
   var vehicleNumberController = TextEditingController();
   var driverNameController = TextEditingController();
   var ratePerLtrController = TextEditingController();
-  var totalPrice = 0.0.obs; // ✅ Make totalPrice observable
+  var totalPrice = 0.0.obs; //  Make totalPrice observable
   TextEditingController totalPriceController = TextEditingController();
 
   void updateTotalPrice() {
     double ratePerLtr = double.tryParse(ratePerLtrController.text) ?? 0.0;
     double fuelAmount = double.tryParse(dieselAmountController.text) ?? 0.0;
 
-    totalPrice.value = ratePerLtr * fuelAmount; // ✅ Observable update
+    totalPrice.value = ratePerLtr * fuelAmount; //  Observable update
     totalPriceController.text = totalPrice.value.toStringAsFixed(2);
 
     update();// Sync with controller
@@ -34,16 +35,24 @@ class FuelEntryController extends GetxController {
   var driverName = RxnString();
   var fuelType = RxnString();
   var ratePerLtr = RxString("");
+  var pumpData = <Map<String, dynamic>>[].obs;
   RxList<String> vehicleID = <String>[].obs;
   RxList<String> fuelTypes = <String>[].obs;
+  RxList<String> pumpNames = <String>[].obs;
   RxnString selectedVehicle = RxnString();
   RxnString selectedFuelType = RxnString();
+  RxnString selectedPumpName = RxnString();
   var fuelEntries = <Map<String, dynamic>>[].obs; // Store fuel entries
   var isLoading = false.obs;
 
   var selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).obs;
   void pickDate(DateTime date) {
     selectedDate.value = DateTime(date.year, date.month, date.day); // Removes time
+  }
+  Rx<DateTime> entryListDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).obs;
+
+  void pickDateForEntryList(DateTime date) {
+    entryListDate.value = DateTime(date.year, date.month, date.day); // Removes time
   }
 
   RxString selectedVehicleNumbers = "Not Found".obs;
@@ -59,6 +68,7 @@ class FuelEntryController extends GetxController {
     super.onInit();
     fetchVehicleNumbers();
   fetchFuelType();
+  fetchPumpNames();
     fetchFuelEntries();
   }
   @override
@@ -74,25 +84,68 @@ class FuelEntryController extends GetxController {
 
   ///fetch vehicle numbers
   Future<void> fetchVehicleNumbers() async {
-    String apiUrl = "${baseUrl}/vehicle_list";
-    try {
-      final response = await http.get(Uri.parse(apiUrl));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data.containsKey('results') && data['results'] is List) {
-          vehicleData.assignAll(List<Map<String, dynamic>>.from(data['results']));
-          vehicleID.assignAll(vehicleData.map((item) => item['xvehicle'].toString()).toList());
+    int page = 1;
+    bool hasNextPage = true;
+
+    vehicleData.clear(); // Clear before loading all pages
+    vehicleID.clear();
+
+    while (hasNextPage) {
+      String apiUrl = "${baseUrl}/vehicle_list?page=$page";
+      print("Fetching vehicle numbers from: $apiUrl");
+
+      try {
+        final response = await http.get(Uri.parse(apiUrl));
+        print("Response Status Code: ${response.statusCode}");
+        print("Response Body: ${response.body}");
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          print("Decoded JSON (Page $page): $data");
+
+          if (data.containsKey('results') && data['results'] is List) {
+            final newVehicles = List<Map<String, dynamic>>.from(data['results']);
+
+            // Add new vehicles to vehicleData
+            vehicleData.addAll(newVehicles);
+
+            // Add vehicle numbers to vehicleID, ensuring no duplicates
+            for (var vehicle in newVehicles) {
+              String vehicleNumber = vehicle['xvehicle'].toString();
+              if (!vehicleID.contains(vehicleNumber)) {
+                vehicleID.add(vehicleNumber);
+              }
+            }
+
+            print("Fetched Vehicle Numbers (Page $page): ${newVehicles.map((v) => v['xvehicle'])}");
+          } else {
+            print("Unexpected API response format at page $page");
+            hasNextPage = false;
+          }
+
+          if (data['next'] != null) {
+            page++; // go to next page
+          } else {
+            hasNextPage = false; // no more pages
+          }
+        } else {
+          print("Failed to fetch vehicle numbers on page $page");
+          hasNextPage = false;
         }
+      } catch (e) {
+        print("Error fetching vehicle numbers: $e");
+        hasNextPage = false;
       }
-    } catch (e) {
-      print("Error fetching vehicle numbers: $e");
     }
+
+    print(" All Vehicle Numbers Fetched (${vehicleID.length}): $vehicleID");
   }
 
   ///fetch fuel type
   Future<void> fetchFuelType() async {
     String apiUrl = "${baseUrl}/dropdown_list?xtype=Fuel_Type";
     print("Fetching fuel type from: $apiUrl");
+
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
@@ -129,37 +182,73 @@ class FuelEntryController extends GetxController {
     }
   }
 
-  ///  fetch fuelentries
-  Future<void> fetchFuelEntries() async {
-    String apiUrl = "${baseUrl}/vmfuelentry_list";
-    isLoading.value = true;
-    print(apiUrl);
+  ///fetch pump name
+  Future<void> fetchPumpNames() async {
+    String apiUrl = "${baseUrl}/dropdown_list?xtype=Pump_Name";
+    print("Fetching pump names from: $apiUrl");
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
-      print("Response Status: ${response.statusCode}");
-      print("Response Body: ${response.body}");
+
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}"); // Check API Response
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body); // Fix here
+        try {
+          final data = json.decode(response.body);
+          print("Decoded JSON: $data"); // Ensure data is properly decoded
 
-        // Convert to list of maps and store in observable list
+          if (data.containsKey('results') && data['results'] is List) {
+            pumpData.assignAll(List<Map<String, dynamic>>.from(data['results']));
+            pumpNames.assignAll(pumpData.map((item) => item['xcode'].toString()).toList());
+
+            print("Fetched Pump Names: $pumpNames"); // Check list before UI updates
+          } else {
+            print("Unexpected API Response Format: 'results' key not found or not a List");
+          }
+        } catch (jsonError) {
+          print("Error decoding JSON: $jsonError");
+        }
+      } else {
+        print("Failed to fetch pump names: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error fetching pump names: $e");
+    }
+  }
+
+
+  Future<void> fetchFuelEntries() async {
+    String zemail = userController.user.value?.username ?? "";
+    String xdate = "${DateFormat('yyyy-MM-dd').format(entryListDate.value)}T00:00:00"; // Include T00:00:00
+
+    String apiUrl = "${baseUrl}/vmfuelentry_list?zemail=$zemail&xdate=$xdate";
+    print("Fetching fuel entries for date: ${entryListDate.value}");
+    print("API URL: $apiUrl");
+
+    isLoading.value = true;
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+      if (response.statusCode == 200) {
+        print("Response Status Code: ${response.statusCode}");
+        print("Response Body: ${response.body}");
+        final data = json.decode(response.body);
         if (data.containsKey('results') && data['results'] is List) {
           fuelEntries.assignAll(List<Map<String, dynamic>>.from(data['results']));
-          print("Fuel Entries Fetched: ${fuelEntries.length}");
         } else {
-          print("Unexpected API Response Format: Missing 'results' key");
           fuelEntries.clear();
         }
       } else {
-        print("Failed to fetch fuel entries: ${response.statusCode}");
+        fuelEntries.clear();
       }
     } catch (e) {
-      print("Error fetching fuel entries: $e");
+      fuelEntries.clear();
     } finally {
       isLoading.value = false;
     }
   }
+
+
 
   void onVehicleSelected(String selectedVehicle) {
     var selectedVehicleData = vehicleData.firstWhere(
@@ -209,6 +298,17 @@ class FuelEntryController extends GetxController {
     );
     if (picked != null) {
       selectedDate.value = picked;
+    }
+  }
+  void selectEntryListDate(BuildContext context) async {
+    DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null) {
+      entryListDate.value = picked;
     }
   }
 
@@ -284,7 +384,7 @@ class FuelEntryController extends GetxController {
       if (response.statusCode == 201 || response.statusCode == 200) {
         Get.snackbar(
           "Success",
-          "Diesel entry added successfully",
+          "Fuel entry added successfully",
           snackPosition: SnackPosition.TOP,
           colorText: AppColor.white,
           backgroundColor: AppColor.seaGreen,
@@ -295,12 +395,14 @@ class FuelEntryController extends GetxController {
         selectedVehicle.value = null;
         selectedVehicleNumbers.value = "Not Found";
         selectedDriverName.value = "Not Found";
-        selectedFuelType.value= null;
+        selectedFuelType.value = null;
+        selectedPumpName.value = null;  // This clears the observable
         ratePerLtrController.clear();
         dieselAmountController.clear();
         totalPrice.value = 0; // Reset observable
         totalPriceController.text = "0"; // Ensure the controller is cleared
-        pumpNameController.clear();
+        pumpNameController.clear();  // This clears the TextEditingController
+
 
         update();
       }

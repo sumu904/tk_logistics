@@ -6,6 +6,8 @@ import 'package:tk_logistics/features/screens/home/vehicle_maintenance/screen/ta
 import 'package:tk_logistics/features/screens/home/vehicle_maintenance/screen/vehicle_maintenance_screen.dart';
 
 import '../../../../../common/widgets/custom_button.dart';
+import '../../../../../common/widgets/custom_indicator.dart';
+import '../../../../../common/widgets/loading_cntroller.dart';
 import '../../../../../util/app_color.dart';
 import '../../../../../util/dimensions.dart';
 import '../../../../../util/styles.dart';
@@ -17,8 +19,8 @@ class MainFormScreen extends StatelessWidget {
 
   MainFormScreen({this.onSuccess, super.key});
   final MainFormController controller = Get.put(MainFormController());
-
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final loadingController = Get.find<LoadingController>();
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -36,10 +38,17 @@ class MainFormScreen extends StatelessWidget {
     final controller = Get.find<MainFormController>();
     final taskController = Get.find<TaskInfoController>();
 
+    // Collect data
     final mainFormData = await controller.collectMainFormDataLocally();
+    print("Collected main form data: $mainFormData");
 
-    // Assign values to TaskInfoController from the collected main form data
-    taskController.maintenanceData.value = mainFormData; // Assuming you store the whole map
+
+
+   /* controller.validateMainForm.add(mainFormData.remove('Maintenance_details')); // Add main form data to entries list
+    print("Entries after adding data: ${controller.validateMainForm}");*/
+
+    // Now pass data to TaskInfoController
+    taskController.maintenanceData.value = mainFormData;
     taskController.selectedVehicle.value = mainFormData['vehicle_code'];
     taskController.vehicleNumberController.text = mainFormData['vehicle_number'];
     taskController.driverNameController.text = mainFormData['driver_name'];
@@ -48,15 +57,12 @@ class MainFormScreen extends StatelessWidget {
     taskController.workshopNameController.text = mainFormData['workshop_name'];
     taskController.costController.text = mainFormData['total_cost'];
     taskController.selectedDate.value = DateFormat('yyyy-MM-dd').parse(mainFormData['xdate']);
-
-    // Optionally, set a temporary or dummy maintenance ID if needed
     taskController.maintenanceID.value = "TEMP-${DateTime.now().millisecondsSinceEpoch}";
 
     if (onSuccess != null) {
-      onSuccess!(); //  Switch to Task Info tab or navigate
+      onSuccess!();  // You can navigate or update the UI as needed
     }
   }
-
 
 
   @override
@@ -207,19 +213,29 @@ class MainFormScreen extends StatelessWidget {
                     SizedBox(
                       height: 30,
                     ),
-                    CustomButton(
+                    Obx(() => loadingController.isSubmitting.value
+                        ? spinkit // Show loader while submission is in progress
+                        : CustomButton(
                       width: 120,
-                      onTap: () async {
-                        // Register TaskInfoController if not already registered
-                        if (!Get.isRegistered<TaskInfoController>()) {
-                          Get.put(TaskInfoController()); // Register it once
-                        }
+                      onTap: () {
+                        loadingController.runWithLoader(
+                          loader: loadingController.isSubmitting,
+                          action: () async {
+                            // Register TaskInfoController if not already registered
+                            if (!Get.isRegistered<TaskInfoController>()) {
+                              Get.put(TaskInfoController());
+                            }
 
-                        // Proceed with the main form submit logic
-                        await onMainFormSubmit(); // Everything handled inside
+                            // Proceed with the main form submission
+                            await onMainFormSubmit();
+                            await Future.delayed(Duration(milliseconds: 800));
+                          },
+                        );
                       },
                       text: 'Submit',
                     ),
+                    ),
+
                     SizedBox(height: 30,),
                     Obx(() => controller.records.isEmpty
                         ? Center(child: Text("No records found."))
@@ -294,16 +310,29 @@ class MainFormScreen extends StatelessWidget {
               quicksandRegular.copyWith(fontSize: Dimensions.fontSizeTen),
           labelText: label,
           labelStyle: quicksandRegular.copyWith(
-              fontSize: Dimensions.fontSizeFourteen,
-              color: required ? AppColor.primaryRed : AppColor.black),
+            fontSize: Dimensions.fontSizeFourteen,
+            color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+                ? AppColor.primaryRed
+                : AppColor.black, // or any color you want for filled state
+          ),
           focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
-              borderRadius: BorderRadius.circular(12)),
+            borderSide: BorderSide(
+              width: 1.5,
+              color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+                  ? AppColor.primaryRed
+                  : AppColor.neviBlue,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
           enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                  width: 1.5,
-                  color: required ? AppColor.primaryRed : AppColor.green),
-              borderRadius: BorderRadius.circular(12)),
+            borderSide: BorderSide(
+              width: 1.5,
+              color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+                  ? AppColor.primaryRed
+                  : AppColor.green,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
@@ -447,13 +476,10 @@ class MainFormScreen extends StatelessWidget {
                 height: 10,
               ),
 
-              TextButton(
-                onPressed: () => Get.back(),
-                child: Text("CLOSE",
-                    style: quicksandSemibold.copyWith(
-                        fontSize: Dimensions.fontSizeSixteen,
-                        color: AppColor.primaryRed)),
-              ),
+              CustomButton(
+                  onTap: () => Get.back(),
+                  text: "OK",
+                  width: 80),
             ],
           ),
         ),

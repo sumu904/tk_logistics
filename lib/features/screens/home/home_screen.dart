@@ -75,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: AppColor.white),
                       ),
                       Text(
-                        "${userController.user.value?.firstName}",
+                        "${userController.user.value?.firstName ?? 'Guest'}",
                         style: quicksandSemibold.copyWith(
                             fontSize: Dimensions.fontSizeTwenty,
                             color: AppColor.white),

@@ -193,33 +193,61 @@ class TmsController extends GetxController {
 
   /// Fetch vehicle number list from API
   Future<void> fetchVehicleNumbers() async {
-    String apiUrl = "${baseUrl}/vehicle_list";
-    print("Fetching vehicle numbers from: $apiUrl");
+    int page = 1;
+    bool hasNextPage = true;
 
-    try {
-      final response = await http.get(Uri.parse(apiUrl));
+    vehicleData.clear(); // Clear before loading all pages
+    vehicleID.clear();
 
-      print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
+    while (hasNextPage) {
+      String apiUrl = "${baseUrl}/vehicle_list?page=$page";
+      print("Fetching vehicle numbers from: $apiUrl");
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        print("Decoded JSON: $data");
+      try {
+        final response = await http.get(Uri.parse(apiUrl));
+        print("Response Status Code: ${response.statusCode}");
+        print("Response Body: ${response.body}");
 
-        if (data.containsKey('results') && data['results'] is List) {
-          vehicleData.assignAll(List<Map<String, dynamic>>.from(data['results']));
-          vehicleID.assignAll(vehicleData.map((item) => item['xvehicle'].toString()).toList());
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          print("Decoded JSON (Page $page): $data");
 
-          print("Fetched Vehicle Numbers: $vehicleID");
+          if (data.containsKey('results') && data['results'] is List) {
+            final newVehicles = List<Map<String, dynamic>>.from(data['results']);
+
+            // Add new vehicles to vehicleData
+            vehicleData.addAll(newVehicles);
+
+            // Add vehicle numbers to vehicleID, ensuring no duplicates
+            for (var vehicle in newVehicles) {
+              String vehicleNumber = vehicle['xvehicle'].toString();
+              if (!vehicleID.contains(vehicleNumber)) {
+                vehicleID.add(vehicleNumber);
+              }
+            }
+
+            print("Fetched Vehicle Numbers (Page $page): ${newVehicles.map((v) => v['xvehicle'])}");
+          } else {
+            print("Unexpected API response format at page $page");
+            hasNextPage = false;
+          }
+
+          if (data['next'] != null) {
+            page++; // go to next page
+          } else {
+            hasNextPage = false; // no more pages
+          }
         } else {
-          print("Unexpected API Response Format for vehicle numbers");
+          print("Failed to fetch vehicle numbers on page $page");
+          hasNextPage = false;
         }
-      } else {
-        print("Failed to fetch vehicle numbers: ${response.statusCode}");
+      } catch (e) {
+        print("Error fetching vehicle numbers: $e");
+        hasNextPage = false;
       }
-    } catch (e) {
-      print("Error fetching vehicle numbers: $e");
     }
+
+    print(" All Vehicle Numbers Fetched (${vehicleID.length}): $vehicleID");
   }
 
   // Track the last selected vehicle to maintain persistence

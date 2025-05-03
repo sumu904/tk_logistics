@@ -7,7 +7,9 @@ import 'package:intl/intl.dart';
 import 'package:tk_logistics/features/screens/home/trip_history/controller/trip_history_controller.dart';
 import 'package:tk_logistics/features/screens/home/trip_history/update%20trip/tms/controller/update_tms_controller.dart';
 import '../../../../../../../common/widgets/custom_button.dart';
+import '../../../../../../../common/widgets/custom_indicator.dart';
 import '../../../../../../../common/widgets/custom_outlined_button.dart';
+import '../../../../../../../common/widgets/loading_cntroller.dart';
 import '../../../../../../../routes/routes_name.dart';
 import '../../../../../../../util/app_color.dart';
 import '../../../../../../../util/dimensions.dart';
@@ -15,10 +17,13 @@ import '../../../../../../../util/styles.dart';
 import '../../../../create_trip/pod/controller/filed_picker_controller.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../../create_trip/pod/screen/proof_of_delivery_screen_tms.dart';
+
 class UpdateTmsTrip extends StatelessWidget {
   final UpdateTmsController controller = Get.put(UpdateTmsController());
-
   final FilePickerController fileController = Get.put(FilePickerController());
+  final loadingController = Get.find<LoadingController>();
+
 
   ///  Add GlobalKey for Form State
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -55,6 +60,7 @@ class UpdateTmsTrip extends StatelessWidget {
     final Map<String, dynamic>? args = Get.arguments; //  Get arguments safely
 
     final String tripNo = args?["tripNo"] ?? "Unknown";
+    final String tripPoD = args?["xlink"] ?? "Unknown";
     final Map<String, dynamic> tripData = args?["tripData"] ?? {};
     final String apiUrl = args?["apiUrl"] ?? "";
 
@@ -321,7 +327,11 @@ class UpdateTmsTrip extends StatelessWidget {
                       width: double.infinity,
                       height: 45,
                       onTap: () {
-                        Get.toNamed("ProofOfDeliveryScreen");
+                        //Get.toNamed("ProofOfDeliveryScreen");
+                        Get.to(() => ProofOfDeliveryScreenTms(), arguments: {
+                          'tripId': tripNo,
+                          'tripPoD': Get.find<UpdateTmsController>().tripPoD.value ?? '',
+                        });
                       },
                     ),
 
@@ -331,31 +341,45 @@ class UpdateTmsTrip extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: CustomButton(
+                          child:Obx(() => loadingController.isUpdatingTrip.value
+                              ? spinkit
+                              : CustomButton(
                             text: "Update Trip",
                             color: AppColor.neviBlue,
                             height: 40,
                             width: 180,
                             onTap: () {
                               if (_formKey.currentState!.validate()) {
-                                controller.updateTrip(tripNo).then((_) {
-                                  // Trigger a refresh after updating the trip
-                                  Get.find<TripHistoryController>()
-                                      .fetchTrips();
-                                });
-                                Get.back();
-                                ;
+                                loadingController.runWithLoader(
+                                  loader: loadingController.isUpdatingTrip,
+                                  action: () async {
+                                    await controller.updateTrip(tripNo);
+                                    await Future.delayed(Duration(milliseconds: 500));
+                                    Get.find<TripHistoryController>().fetchTrips();
+                                    Get.back();
+                                  },
+                                );
                               }
                             },
-                          ),
-                        ),
+                          ))),
                         Expanded(
-                          child: CustomButton(
+                          child:Obx(() => loadingController.isClosingTrip.value
+                              ? spinkit
+                              : CustomButton(
                             text: "Close Trip",
                             height: 40,
                             width: 180,
-                            onTap: () => Get.back(),
-                          ),
+                            onTap: () {
+                              loadingController.runWithLoader(
+                                loader: loadingController.isClosingTrip,
+                                action: () async {
+                                  // Optional: simulate a delay or do other closing operations
+                                  await Future.delayed(Duration(milliseconds: 500));
+                                  Get.back();
+                                },
+                              );
+                            },
+                          ))
                         ),
                         Expanded(
                             child: CustomButton(
@@ -593,13 +617,10 @@ class UpdateTmsTrip extends StatelessWidget {
                 height: 10,
               ),
 
-              TextButton(
-                onPressed: () => Get.back(),
-                child: Text("CLOSE",
-                    style: quicksandSemibold.copyWith(
-                        fontSize: Dimensions.fontSizeSixteen,
-                        color: AppColor.primaryRed)),
-              ),
+              CustomButton(
+                  onTap: () => Get.back(),
+                  text: "OK",
+                  width: 80),
             ],
           ),
         ),
@@ -773,13 +794,10 @@ class UpdateTmsTrip extends StatelessWidget {
               SizedBox(height: 10),
 
               // Close Button
-              TextButton(
-                onPressed: () => Get.back(),
-                child: Text("CLOSE",
-                    style: quicksandSemibold.copyWith(
-                        fontSize: Dimensions.fontSizeSixteen,
-                        color: AppColor.primaryRed)),
-              ),
+              CustomButton(
+                  onTap: () => Get.back(),
+                  text: "OK",
+                  width: 80),
             ],
           ),
         ),

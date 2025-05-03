@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:tk_logistics/common/widgets/custom_button.dart';
 import 'package:tk_logistics/common/widgets/custom_outlined_button.dart';
 
+import '../../../../../common/widgets/custom_indicator.dart';
+import '../../../../../common/widgets/loading_cntroller.dart';
 import '../../../../../util/app_color.dart';
 import '../../../../../util/dimensions.dart';
 import '../../../../../util/styles.dart';
@@ -12,6 +14,7 @@ import '../controller/fuel_entry_controller.dart';
 class FuelEntryScreen extends StatelessWidget {
   final FuelEntryController controller = Get.put(FuelEntryController());
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final loadingController = Get.find<LoadingController>();
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -57,11 +60,12 @@ class FuelEntryScreen extends StatelessWidget {
             child: GetBuilder<FuelEntryController>(initState: (_) {
               controller.fetchVehicleNumbers();
               controller.fetchFuelType();
+              controller.fetchPumpNames();
               controller.fetchFuelEntries();
               if (controller.fuelTypes.isNotEmpty) {
                 controller.fuelType.value = controller.fuelTypes[1];
 // Set first item as default
-              } // ✅ Fetch locations when screen opens
+              } //  Fetch locations when screen opens
             }, builder: (controller) {
               return Column(
                 children: [
@@ -88,7 +92,7 @@ class FuelEntryScreen extends StatelessWidget {
                           print(
                               "Vehicle Number: ${controller.selectedVehicleNumbers.value}");
 
-                          // ✅ Update the controller before building the UI
+                          //  Update the controller before building the UI
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             controller.vehicleNumberController.text =
                                 controller.selectedVehicleNumbers.value;
@@ -167,7 +171,7 @@ class FuelEntryScreen extends StatelessWidget {
                           print(
                               "Rate per ltr: ${controller.selectedRatePerLtr.value}");
 
-                          // ✅ Update the controller before building the UI
+                          //  Update the controller before building the UI
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             controller.ratePerLtrController.text =
                                 controller.selectedRatePerLtr.value;
@@ -187,7 +191,7 @@ class FuelEntryScreen extends StatelessWidget {
                           controller.dieselAmountController,
                           TextInputType.number,
                           onChanged: () => controller
-                              .updateTotalPrice(), // ✅ Update total price dynamically
+                              .updateTotalPrice(), //  Update total price dynamically
                         ),
                       ),
                     ],
@@ -200,45 +204,101 @@ class FuelEntryScreen extends StatelessWidget {
                       "Total Price",
                       TextEditingController(
                         text: controller.totalPrice.value
-                            .toStringAsFixed(2), // ✅ Use observable value
+                            .toStringAsFixed(2), //  Use observable value
                       ),
                       TextInputType.number,
                       isNumeric: true,
                       isLabel: false,
-                      readOnly: true, // ✅ Make it read-only
+                      readOnly: true, //  Make it read-only
                     );
                   }),
-                  buildTextField("Pump Name", controller.pumpNameController,
-                      TextInputType.text),
+                  SizedBox(height: 7,),
+                  buildSearchableDropdown(
+                    "Pump Name",
+                    controller.pumpNames,
+                    controller.selectedPumpName,
+                    required: false,
+                    onSelected: (selectedPump) {
+                      controller.pumpNameController.text = selectedPump; // update text controller if needed
+                      print("Selected Pump: $selectedPump");
+                    },
+                  ),
                   SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       Expanded(
-                          child: CustomButton(
-                        onTap: () {
-                          if (_formKey.currentState?.validate() ?? false) {
-                            print("Form validated successfully!");
-                            controller
-                                .addEntry(); // ✅ Proceed with submission if valid
-                            controller.fetchFuelEntries();
-                          } else {
-                            print("Validation failed! Please check inputs.");
-                          }
-                        },
-                        text: 'Submit',
-                      )),
+                          child: Obx(() => loadingController.isSubmitting.value
+                              ? spinkit // Show the loader when the action is running
+                              : CustomButton(
+                            onTap: () async {
+                              if (_formKey.currentState?.validate() ?? false) {
+                                print("Form validated successfully!");
+                                // Show the confirmation dialog
+                                bool? confirmed = await Get.dialog<bool>(
+                                  AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                          30), // Rounded corners
+                                    ),
+                                    backgroundColor: AppColor.mintGreenBG,
+                                    title: Text("Confirm Submission",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeTwenty,color: AppColor.neviBlue)),
+                                    content: Text("Are you sure you want to submit this form?",style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeSixteen)),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Get.back(result: false), // No button
+                                        child: Text("No",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen,color: AppColor.primaryRed)),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Get.back(result: true), // Yes button
+                                        child: Text("Yes",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen,color: AppColor.persianGreen)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirmed == true) {
+                                  // If user selects 'Yes', proceed with submission
+                                  loadingController.runWithLoader(
+                                    loader: loadingController.isSubmitting,
+                                    action: () async {
+                                      await controller.addEntry(); // Proceed with submission if valid
+                                      await controller.fetchFuelEntries(); // Fetch updated fuel entries
+                                      await Future.delayed(Duration(milliseconds: 500));
+                                    },
+                                  );
+                                } else {
+                                  print("Submission canceled.");
+                                }
+                              } else {
+                                print("Validation failed! Please check inputs.");
+                              }
+                            },
+                            text: 'Submit',
+                          ),
+                          )
+                      ),
                       SizedBox(
                         width: 10,
                       ),
                       Expanded(
-                        child: CustomOutlinedButton(
+                        child: Obx(() => loadingController.isLoading.value
+                            ? spinkit // Show the loader when the action is running
+                            : CustomOutlinedButton(
                           width: double.infinity,
                           onTap: () {
-                            Get.toNamed("FuelEntryList");
+                            loadingController.runWithLoader(
+                              loader: loadingController.isLoading,
+                              action: () async {
+                                // Simulate a delay or any other task before navigation
+                                await Future.delayed(Duration(seconds: 1));
+                                Get.toNamed("FuelEntryList"); // Navigate to the Fuel Entry List screen
+                              },
+                            );
                           },
                           text: 'See Entry List',
                         ),
+                        )
                       )
                     ],
                   ),
@@ -258,7 +318,7 @@ class FuelEntryScreen extends StatelessWidget {
     bool required = false,
     bool isNumeric = false,
     bool isLabel = false,
-    bool readOnly = false, // ✅ Added readOnly parameter
+    bool readOnly = false, //  Added readOnly parameter
   }) {
     return Padding(
       padding:
@@ -295,7 +355,7 @@ class FuelEntryScreen extends StatelessWidget {
           ),
         ),
         readOnly: readOnly,
-        // ✅ Now controlled by the parameter
+        //  Now controlled by the parameter
         controller: controller,
         keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
         validator: required
@@ -342,14 +402,30 @@ class FuelEntryScreen extends StatelessWidget {
         errorText: null,
         errorStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeTen),
         labelText: label,
-        labelStyle:
-            quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen),
+        labelStyle: quicksandRegular.copyWith(
+          fontSize: Dimensions.fontSizeFourteen,
+          color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+              ? AppColor.primaryRed
+              : AppColor.black, // or any color you want for filled state
+        ),
         focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
-            borderRadius: BorderRadius.circular(12)),
+          borderSide: BorderSide(
+            width: 1.5,
+            color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+                ? AppColor.primaryRed
+                : AppColor.neviBlue,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
         enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(width: 1.5, color: required? AppColor.primaryRed : AppColor.green),
-            borderRadius: BorderRadius.circular(12)),
+          borderSide: BorderSide(
+            width: 1.5,
+            color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+                ? AppColor.primaryRed
+                : AppColor.green,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
@@ -447,13 +523,10 @@ class FuelEntryScreen extends StatelessWidget {
                       },
                     ),
                   )),
-              TextButton(
-                onPressed: () => Get.back(),
-                child: Text("CLOSE",
-                    style: quicksandSemibold.copyWith(
-                        fontSize: Dimensions.fontSizeSixteen,
-                        color: AppColor.primaryRed)),
-              ),
+              CustomButton(
+                  onTap: () => Get.back(),
+                  text: "OK",
+                  width: 80),
             ],
           ),
         ),
@@ -476,13 +549,28 @@ class FuelEntryScreen extends StatelessWidget {
         labelText: label,
         labelStyle: quicksandRegular.copyWith(
           fontSize: Dimensions.fontSizeFourteen,
+          color: (required && controller.text.isEmpty)
+              ? AppColor.primaryRed
+              : AppColor.black,
         ),
         focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
-            borderRadius: BorderRadius.circular(12)),
+          borderSide: BorderSide(
+            width: 1.5,
+            color: (required && controller.text.isEmpty)
+                ? AppColor.primaryRed
+                : AppColor.neviBlue,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
         enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(width: 1.5, color: required ? AppColor.primaryRed :AppColor.green),
-            borderRadius: BorderRadius.circular(12)),
+          borderSide: BorderSide(
+            width: 1.5,
+            color: (required && controller.text.isEmpty)
+                ? AppColor.primaryRed
+                : AppColor.green, // or AppColor.neviBlue if you want
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
@@ -494,7 +582,7 @@ class FuelEntryScreen extends StatelessWidget {
       ),
       onChanged: (value) {
         if (onChanged != null) {
-          onChanged(); // ✅ Call updateTotalPrice() whenever value changes
+          onChanged(); //  Call updateTotalPrice() whenever value changes
         }
       },
       validator: required
@@ -541,7 +629,7 @@ Widget buildReadOnlyField(String label, TextEditingController controller) {
       style: quicksandSemibold.copyWith(
         fontSize: Dimensions.fontSizeFourteen, // Ensure text is not bold
       ),
-      controller: controller, // ✅ Use only controller (No initialValue)
+      controller: controller, //  Use only controller (No initialValue)
       decoration: InputDecoration(
         labelStyle:
             quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen),
