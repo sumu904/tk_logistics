@@ -1,0 +1,2 @@
+D:/Work/tk_logistics/android/app/.cxx/RelWithDebInfo/4g5l6z6l/x86/CMakeFiles/edit_cache.dir
+D:/Work/tk_logistics/android/app/.cxx/RelWithDebInfo/4g5l6z6l/x86/CMakeFiles/rebuild_cache.dir

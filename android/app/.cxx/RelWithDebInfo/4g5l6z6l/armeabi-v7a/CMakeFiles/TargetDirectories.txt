@@ -1,0 +1,2 @@
+D:/Work/tk_logistics/android/app/.cxx/RelWithDebInfo/4g5l6z6l/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/Work/tk_logistics/android/app/.cxx/RelWithDebInfo/4g5l6z6l/armeabi-v7a/CMakeFiles/rebuild_cache.dir
