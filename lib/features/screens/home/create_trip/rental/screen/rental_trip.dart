@@ -202,7 +202,7 @@ class RentalTrip extends StatelessWidget {
                       allowAdd: true, // If you want to allow adding new items, set to true
                     ),
 
-                    // buildReadOnlyField("Challan", controller.challan.value),
+                    // buildReadOnlyField("Challan", controller.challan.value), not necessary
 
                     SizedBox(height: 5,),
                     Row(
