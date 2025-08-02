@@ -8,22 +8,29 @@ import '../../../../../../../util/app_color.dart';
 import '../../../../../../auth/login/controller/user_controller.dart';
 
 
-class Update3msController extends GetxController {
+class UpdateRentalController extends GetxController {
   final userController = Get.find<UserController>();
   RxString tripId = ''.obs;
   RxString tripPoD = ''.obs;
   // Dropdown Selections
   RxList<String> locations = <String>[].obs;
-  RxList<String> vehicleSizes = <String>[].obs;
   RxList<String> billingUnits = <String>[].obs;
   RxList<String> cargoTypes = <String>[].obs;
   RxList<String> segments = <String>[].obs;
   RxList<String> pickSuppliers = <String>[].obs;
   var isDataLoading = false.obs;
 
+
+  RxnString selectedVehicle = RxnString();
+  var selectedVehicleNumbers = "".obs;
+  var selectedDriverName = "".obs;
+  var selectedDriverMobile = "".obs;
+  var selectedVendorName = ''.obs;
+  RxList<String> vehicleID = <String>[].obs;
+  RxList<Map<String, dynamic>> vehicleData = <Map<String, dynamic>>[].obs;
+
   var from = RxnString();
   var to = RxnString();
-  var vehicleSize = RxnString();
   var billingUnit = RxnString();
   var pickSupplier = RxnString();
   RxList<String> cargoType = <String>[].obs;
@@ -46,8 +53,10 @@ class Update3msController extends GetxController {
   TextEditingController unloadingPointController = TextEditingController();
   TextEditingController vehicleIDController = TextEditingController();
   TextEditingController vehicleNoController = TextEditingController();
+  TextEditingController vehicleNumberController = TextEditingController();
   TextEditingController driverNameController = TextEditingController();
   TextEditingController driverPhoneController = TextEditingController();
+  TextEditingController vendorNameController = TextEditingController();
   TextEditingController cargoWeightController = TextEditingController();
   TextEditingController serviceChargeController = TextEditingController();
   TextEditingController startTimeController = TextEditingController();
@@ -61,8 +70,7 @@ class Update3msController extends GetxController {
   void onInit() {
     super.onInit();
     fetchLocations();
-    //fetchVehicleNumbers();
-    fetchVehicleSizes();
+    fetchVehicleNumbers();
     fetchBillingUnits();
     fetchSuppliers();
     fetchCargoType();
@@ -117,11 +125,12 @@ class Update3msController extends GetxController {
                   to.value = tripData['xdestin'] ?? '';
                   loadingPointController.text = (tripData['xlpoint'] ?? '').toString();
                   unloadingPointController.text = (tripData['xulpoint'] ?? '').toString();
-                  pickSupplier.value = tripData['xsup'] ?? '';
-                  vehicleIDController.text = '${tripData['xvehicle'] ?? ''} ${tripData['xvmregno'] ?? ''}';
-                  vehicleSize.value = tripData['xvhcat'] ?? '';
-                  driverNameController.text = tripData['xdriver'] ?? '';
-                  driverPhoneController.text = tripData['xmobile'] ?? '';
+                  //pickSupplier.value = tripData['xsup'] ?? '';
+                  selectedVehicle.value = tripData['xvehicle'] ?? '';
+                  selectedVehicleNumbers.value = tripData['xvmregno'] ?? '';
+                  selectedDriverName.value = tripData['xdriver'] ?? '';
+                  selectedDriverMobile.value = tripData['xmobile'] ?? '';
+                  selectedVendorName.value = tripData['xsup'] ?? '';
                   billingUnit.value = tripData['xproj'] ?? '';
                   selectedDate.value = tripData['xdate'] != null
                       ? DateTime.parse(tripData['xdate']) // Parse the string to DateTime
@@ -225,39 +234,121 @@ class Update3msController extends GetxController {
     }
   }
 
-  /// Fetch vehicle sizes list from API
+  Future<void> fetchVehicleNumbers() async {
+    int page = 1;
+    bool hasNextPage = true;
 
-  Future<void> fetchVehicleSizes() async {
-    String apiUrl = "${baseUrl}/dropdown_list?xtype=Vehicle_Size";
-    print("Fetching billing unit from: $apiUrl");
+    vehicleData.clear(); // Clear before loading all pages
+    vehicleID.clear();
 
-    try {
-      final response = await http.get(Uri.parse(apiUrl));
+    while (hasNextPage) {
+      String apiUrl = "${baseUrl}/vehicle_list?page=$page";
+      print("Fetching vehicle numbers from: $apiUrl");
 
-      print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}"); // Check API Response
+      try {
+        final response = await http.get(Uri.parse(apiUrl));
+        print("Response Status Code: ${response.statusCode}");
+        print("Response Body: ${response.body}");
 
-      if (response.statusCode == 200) {
-        try {
+        if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          print("Decoded JSON: $data"); // Ensure data is properly decoded
+          print("Decoded JSON (Page $page): $data");
 
           if (data.containsKey('results') && data['results'] is List) {
-            vehicleSizes.assignAll(List<String>.from(
-                data['results'].map((item) => item['xcode'].toString())));
-            print("Fetched Billing Units: $vehicleSizes"); // Check list before UI updates
+            final List<Map<String, dynamic>> newVehicles =
+            List<Map<String, dynamic>>.from(data['results']);
+
+            // 🔍 Filter only vehicles with xstatus == "Rental"
+            final rentalVehicles = newVehicles.where((vehicle) {
+              final status = vehicle['xstatus']?.toString().toLowerCase();
+              return status == 'rental';
+            }).toList();
+
+            vehicleData.addAll(rentalVehicles);
+
+            for (var vehicle in rentalVehicles) {
+              String vehicleNumber = vehicle['xvehicle'].toString();
+              if (!vehicleID.contains(vehicleNumber)) {
+                vehicleID.add(vehicleNumber);
+              }
+            }
+
+            print("Fetched Rental Vehicles (Page $page): ${rentalVehicles.map((v) => v['xvehicle'])}");
           } else {
-            print("Unexpected API Response Format: 'results' key not found or not a List");
+            print("Unexpected API response format at page $page");
+            hasNextPage = false;
           }
-        } catch (jsonError) {
-          print("Error decoding JSON: $jsonError");
+
+          if (data['next'] != null) {
+            page++; // go to next page
+          } else {
+            hasNextPage = false;
+          }
+        } else {
+          print("Failed to fetch vehicle numbers on page $page");
+          hasNextPage = false;
         }
-      } else {
-        print("Failed to fetch vehicle size: ${response.statusCode}");
+      } catch (e) {
+        print("Error fetching vehicle numbers: $e");
+        hasNextPage = false;
       }
-    } catch (e) {
-      print("Error fetching vehicle size: $e");
     }
+
+    print("All Rental Vehicle Numbers Fetched (${vehicleID.length}): $vehicleID");
+  }
+
+  // Track the last selected vehicle to maintain persistence
+  String? lastSelectedVehicle;
+  String? lastSelectedVehicleNumbers;
+  String? lastSelectedDriverName;
+  String? lastSelectedDriverMobile;
+  String? lastSelectedVendorName;
+
+  void onVehicleSelected(String selectedVehicle) {
+    var emptyValue = "Not available";
+    lastSelectedVehicle = selectedVehicle; // Update last selected vehicle
+
+    var selectedVehicleData = vehicleData.firstWhere(
+          (item) => item['xvehicle'] == selectedVehicle,
+      orElse: () => <String, dynamic>{},
+    );
+
+    print("Selected Vehicle Data: $selectedVehicleData");
+
+    if (selectedVehicleData.isNotEmpty) {
+      selectedVehicleNumbers.value = selectedVehicleData["xvmregno"]?.toString() ?? emptyValue;
+      selectedDriverName.value = selectedVehicleData["xname"]?.toString() ?? emptyValue;
+      selectedDriverMobile.value = selectedVehicleData['xmobile']?.toString() ?? emptyValue;
+
+      // Set xowner (Vendor Name)
+      selectedVendorName.value = selectedVehicleData['xsup']?.toString() ?? emptyValue;
+    } else {
+      selectedVehicleNumbers.value = emptyValue;
+      selectedDriverName.value = emptyValue;
+      selectedDriverMobile.value = emptyValue;
+      selectedVendorName.value = emptyValue;
+      print("Selected Vehicle Data is not found");
+    }
+
+    // Save the selected values
+    if (selectedVehicle == lastSelectedVehicle) {
+      print("Same vehicle selected. Retaining previous values.");
+      lastSelectedVehicleNumbers = selectedVehicleNumbers.value;
+      lastSelectedDriverName = selectedDriverName.value;
+      lastSelectedDriverMobile = selectedDriverMobile.value;
+      lastSelectedVendorName = selectedVendorName.value;
+      // You can also store lastSelectedVendor if needed
+    }
+
+    // Update controllers
+    vehicleNumberController.text = lastSelectedVehicleNumbers!;
+    driverNameController.text = lastSelectedDriverName!;
+    driverPhoneController.text = lastSelectedDriverMobile!;
+    vendorNameController.text = lastSelectedVendorName!;
+    // vendorController.text is already set above
+
+    // Notify the UI
+    update();
   }
 
 
@@ -408,12 +499,12 @@ class Update3msController extends GetxController {
       "xdestin": to.value,
       "xlpoint": loadingPointController.text,
       "xulpoint": unloadingPointController.text,
-      "xsup": pickSupplier.value,
-      "xvehicle": vehicleIDController.text,
-      "xvmregno": vehicleIDController.text,
-      "xvhcat": vehicleSize.value,
-      "xname": driverNameController.text,
-      "xmobile": driverPhoneController.text,
+      //"xsup": pickSupplier.value,
+      "xvehicle": selectedVehicle.value,
+      "xvmregno": selectedVehicleNumbers.value,
+      "xname": selectedDriverName.value,
+      "xmobile": selectedDriverMobile.value,
+      "xsup":selectedVendorName.value,
       "xproj": billingUnit.value,
       "xdate": selectedDate.value,
       "xinweight":cargoWeightController.text,
@@ -475,11 +566,11 @@ class Update3msController extends GetxController {
       "xtypecat": cargoType.isNotEmpty ? cargoType.join(", ") : "",
       "xmovetype": tripType.value?.trim() ?? "",
       "xsagnum": segment.value?.trim() ?? "",
-      "xvehicle": vehicleIDController.text.trim(),
-      "xvmregno": vehicleIDController.text.trim(),
-      "xvhcat": vehicleSize.value?.trim() ?? "",
-      "xdriver": driverNameController.text.trim(),
-      "xmobile": driverPhoneController.text.trim(),
+      "xvehicle": selectedVehicle.value ?? "",
+      "xvmregno": selectedVehicleNumbers.value ?? "",
+      "xdriver": selectedDriverName.value ?? "",
+      "xmobile": selectedDriverMobile.value ?? "",
+      "xsup": selectedVendorName.value ?? "",
       "xinweight": double.tryParse(cargoWeightController.text)?.toStringAsFixed(2),
       "xprime": double.tryParse(serviceChargeController.text)?.toStringAsFixed(2),
       "xouttime": formattedOutTime ?? null,

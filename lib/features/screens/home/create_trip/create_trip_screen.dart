@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tk_logistics/features/screens/home/create_trip/3ms/screen/threems_trip.dart';
+import 'package:tk_logistics/features/screens/home/create_trip/rental/screen/rental_trip.dart';
 import 'package:tk_logistics/features/screens/home/create_trip/tms/screen/tms_trip.dart';
 import 'package:tk_logistics/util/app_color.dart';
 import 'package:tk_logistics/util/dimensions.dart';
@@ -20,7 +21,7 @@ class _CreateTripScreenState extends State<CreateTripScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -51,7 +52,7 @@ class _CreateTripScreenState extends State<CreateTripScreen>
         ),
         body: Column(children: [
           // TabBar at the top
-          TabBar.secondary(
+          TabBar(
             controller: _tabController,
             indicatorColor: AppColor.neviBlue,
             labelColor: AppColor.neviBlue,
@@ -60,8 +61,9 @@ class _CreateTripScreenState extends State<CreateTripScreen>
                 fontSize: Dimensions.fontSizeSixteen,
                 fontWeight: FontWeight.w900),
             tabs: [
-              Tab(text: "TMS Trip"),
-              Tab(text: "3MS Trip"),
+              Tab(text: "TMS"),
+              Tab(text: "RENTAL"),
+              Tab(text: "3MS"),
             ],
           ),
 
@@ -69,6 +71,7 @@ class _CreateTripScreenState extends State<CreateTripScreen>
           Expanded(
               child: TabBarView(controller: _tabController, children:  [
             TmsTrip(),
+            RentalTrip(),
             ThreemsTrip(),
           ]))
         ]));

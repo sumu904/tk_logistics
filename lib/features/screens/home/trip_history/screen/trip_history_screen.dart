@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:tk_logistics/const/const_values.dart';
 import '../../../../../routes/routes_name.dart';
 import '../../../../../util/app_color.dart';
 import '../../../../../util/dimensions.dart';
@@ -25,9 +26,7 @@ class TripHistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery
-        .of(context)
-        .size;
+    final size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: AppColor.mintGreenBG,
       appBar: AppBar(
@@ -51,32 +50,28 @@ class TripHistoryScreen extends StatelessWidget {
       body: Padding(
         padding: EdgeInsets.symmetric(
             horizontal: Dimensions.paddingSizeTwenty,
-            vertical: Dimensions.paddingSizeTwenty),
+            vertical: Dimensions.paddingSizeFifteen),
         child: GetBuilder<TripHistoryController>(initState: (_) {
           controller.fetchTrips();
         }, builder: (controller) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                "Trip Type",
+                style: quicksandBold.copyWith(
+                    fontSize: Dimensions.fontSizeEighteen,
+                    fontWeight: FontWeight.w800,
+                    color: AppColor.neviBlue),
+              ),
               Row(
                 children: [
-                  Text(
-                    "Trip Type",
-                    style: quicksandBold.copyWith(
-                        fontSize: Dimensions.fontSizeEighteen,
-                        fontWeight: FontWeight.w800,
-                        color: AppColor.neviBlue),
-                  ),
-                  SizedBox(
-                    width: 15,
-                  ),
                   Expanded(
-                    child: Obx(() =>
-                        RadioListTile<String>(
+                    child: Obx(() => RadioListTile<String>(
                           title: Text(
                             "TMS",
                             style: quicksandBold.copyWith(
-                              fontSize: Dimensions.fontSizeSixteen,
+                              fontSize: Dimensions.fontSizeTwelve,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -86,12 +81,25 @@ class TripHistoryScreen extends StatelessWidget {
                         )),
                   ),
                   Expanded(
-                    child: Obx(() =>
-                        RadioListTile<String>(
+                    child: Obx(() => RadioListTile<String>(
+                          title: Text(
+                            "RENTAL",
+                            style: quicksandBold.copyWith(
+                              fontSize: Dimensions.fontSizeTwelve,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          value: 'RENTAL',
+                          groupValue: controller.selectedOption.value,
+                          onChanged: (value) => controller.changeOption(value!),
+                        )),
+                  ),
+                  Expanded(
+                    child: Obx(() => RadioListTile<String>(
                           title: Text(
                             "3MS",
                             style: quicksandBold.copyWith(
-                              fontSize: Dimensions.fontSizeSixteen,
+                              fontSize: Dimensions.fontSizeTwelve,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -135,16 +143,14 @@ class TripHistoryScreen extends StatelessWidget {
                       SizedBox(
                         width: 15,
                       ),
-                      Obx(() =>
-                          Text(
-                              controller.selectedDate.value == null
-                                  ? "Pick a date to view trips"
-                                  : " ${DateFormat('MMMM dd, yyyy').format(
-                                  controller.selectedDate.value!)}",
-                              style: quicksandSemibold.copyWith(
-                                  fontSize: Dimensions.fontSizeSixteen,
-                                  color: AppColor.neviBlue,
-                                  fontWeight: FontWeight.w700))),
+                      Obx(() => Text(
+                          controller.selectedDate.value == null
+                              ? "Pick a date to view trips"
+                              : " ${DateFormat('MMMM dd, yyyy').format(controller.selectedDate.value!)}",
+                          style: quicksandSemibold.copyWith(
+                              fontSize: Dimensions.fontSizeSixteen,
+                              color: AppColor.neviBlue,
+                              fontWeight: FontWeight.w700))),
                     ],
                   ),
                 ),
@@ -162,180 +168,210 @@ class TripHistoryScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Obx(() =>
-                    controller.selectedDate.value == null
+                    Obx(() => controller.selectedDate.value == null
                         ? SizedBox() // Hide list initially
                         : controller.filteredTrips.isEmpty
-                        ? Center(
-                        child: Text(
-                          "No trips found for this date",
-                          style: quicksandBold.copyWith(
-                              fontSize: Dimensions.fontSizeSixteen,
-                              color: AppColor.primaryRed,
-                              fontWeight: FontWeight.w800),
-                        ))
-                        : SizedBox(
-                      height: MediaQuery
-                          .of(context)
-                          .size
-                          .height -
-                          ( // Subtract heights of the elements above
-                              kToolbarHeight + // Default app bar height (if exists)
-                                  MediaQuery
-                                      .of(context)
-                                      .padding
-                                      .top + // Status bar height
-                                  Dimensions.paddingSizeTwenty *
-                                     2.0 + // Padding from top and bottom
-                                  10 + // Space after Trip Type
-                                  10 + // Space after Date label
-                                  Dimensions.paddingSizeFifteen *
-                                      5 + // Date Picker Container height
-                                  10 + // Space after Date Picker
-                                  Dimensions.paddingSizeFifteen *
-                                      5 + // Container padding for trip list
-                                  50 // Approximate height of "No trips found" message or any extra margin
-                          ),
-                      child: ListView.builder(
-                        primary: false,
-                        shrinkWrap: true,
-                        physics: BouncingScrollPhysics(),
-                        itemCount: controller.filteredTrips.length,
-                        itemBuilder: (context, index) {
-                          final trip =
-                          controller.filteredTrips[index];
-                          return Container(
-                            margin: EdgeInsets.symmetric(
-                                vertical: Dimensions.marginSizeTen),
-                            padding: EdgeInsets.symmetric(
-                                horizontal: Dimensions.paddingSizeTen,
-                                vertical: Dimensions.paddingSizeTen),
-                            decoration: BoxDecoration(
-                                color: AppColor.white,
-                                borderRadius:
-                                BorderRadius.circular(12)),
-                            child: Row(
-                              mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "Trip no : ${trip.tripNo}",
-                                          style: quicksandBold.copyWith(
-                                              fontSize: Dimensions
-                                                  .fontSizeEighteen,
-                                              color:
-                                              AppColor.neviBlue,
-                                              fontWeight:
-                                              FontWeight.w800),
-                                        ),
-                                        Text(
-                                          "${trip.tripType == 'TMS'
-                                              ? 'Vehicle Code'
-                                              : 'Vehicle Number'} : ${trip
-                                              .vehicleID}",
-                                          style: quicksandSemibold.copyWith(
-                                            fontSize: Dimensions
-                                                .fontSizeSixteen,
+                            ? Center(
+                                child: Text(
+                                "No trips found for this date",
+                                style: quicksandBold.copyWith(
+                                    fontSize: Dimensions.fontSizeSixteen,
+                                    color: AppColor.primaryRed,
+                                    fontWeight: FontWeight.w800),
+                              ))
+                            : SizedBox(
+                                height: MediaQuery.of(context).size.height -
+                                    ( // Subtract heights of the elements above
+                                        kToolbarHeight + // Default app bar height (if exists)
+                                            MediaQuery.of(context)
+                                                .padding
+                                                .top + // Status bar height
+                                            Dimensions.paddingSizeTwenty *
+                                                2.0 + // Padding from top and bottom
+                                            10 + // Space after Trip Type
+                                            10 + // Space after Date label
+                                            Dimensions.paddingSizeFifteen *
+                                                5 + // Date Picker Container height
+                                            10 + // Space after Date Picker
+                                            Dimensions.paddingSizeFifteen *
+                                                5 + // Container padding for trip list
+                                            50 // Approximate height of "No trips found" message or any extra margin
+                                    ),
+                                child: ListView.builder(
+                                  primary: false,
+                                  shrinkWrap: true,
+                                  physics: BouncingScrollPhysics(),
+                                  itemCount: controller.filteredTrips.length,
+                                  itemBuilder: (context, index) {
+                                    final trip =
+                                        controller.filteredTrips[index];
+                                    return Container(
+                                      margin: EdgeInsets.symmetric(
+                                          vertical: Dimensions.marginSizeTen),
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: Dimensions.paddingSizeTen,
+                                          vertical: Dimensions.paddingSizeTen),
+                                      decoration: BoxDecoration(
+                                          color: AppColor.white,
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "Trip no : ${trip.tripNo}",
+                                                    style: quicksandBold.copyWith(
+                                                        fontSize: Dimensions
+                                                            .fontSizeEighteen,
+                                                        color:
+                                                            AppColor.neviBlue,
+                                                        fontWeight:
+                                                            FontWeight.w800),
+                                                  ),
+                                                  Text(
+                                                    "${trip.tripType == '3MS' ? 'Vehicle Regn No.' : 'Vehicle Code'} : ${trip.vehicleID}",
+                                                    style: quicksandSemibold
+                                                        .copyWith(
+                                                      fontSize: Dimensions
+                                                          .fontSizeSixteen,
+                                                    ),
+                                                  ),
+                                                  if (trip.tripType == 'TMS' &&
+                                                      (trip.vehicleNo ?? '')
+                                                          .isNotEmpty)
+                                                    Text(
+                                                        "Vehicle Regn No. : ${trip.vehicleNo}",
+                                                        style: quicksandSemibold
+                                                            .copyWith(
+                                                          fontSize: Dimensions
+                                                              .fontSizeFourteen,
+                                                        )),
+                                                  Text(
+                                                      "Driver Name : ${trip.driverName}",
+                                                      style: quicksandSemibold
+                                                          .copyWith(
+                                                        fontSize: Dimensions
+                                                            .fontSizeFourteen,
+                                                      )),
+                                                  Text(
+                                                      "Driver Phone : ${trip.driverPhone}",
+                                                      style: quicksandSemibold
+                                                          .copyWith(
+                                                        fontSize: Dimensions
+                                                            .fontSizeFourteen,
+                                                      )),
+                                                  if ((trip.tripType ==
+                                                              'RENTAL' ||
+                                                          trip.tripType ==
+                                                              '3MS') &&
+                                                      trip.pickVendor != null &&
+                                                      trip.pickVendor!
+                                                          .isNotEmpty)
+                                                    Text(
+                                                      "Vendor Name : ${trip.pickVendor}",
+                                                      style: quicksandSemibold
+                                                          .copyWith(
+                                                        fontSize: Dimensions
+                                                            .fontSizeFourteen,
+                                                      ),
+                                                    ),
+                                                  Text(
+                                                    "From: ${trip.from}",
+                                                    style: quicksandSemibold
+                                                        .copyWith(
+                                                      fontSize: Dimensions
+                                                          .fontSizeFourteen,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    "To: ${trip.to}",
+                                                    style: quicksandSemibold
+                                                        .copyWith(
+                                                      fontSize: Dimensions
+                                                          .fontSizeFourteen,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                      "Billing Unit : ${trip.billingUnit}",
+                                                      maxLines: 2,
+                                                      style: quicksandSemibold
+                                                          .copyWith(
+                                                        fontSize: Dimensions
+                                                            .fontSizeFourteen,
+                                                      )),
+                                                  Text(
+                                                      "Pickup : ${trip.pickupTime}",
+                                                      maxLines: 2,
+                                                      style: quicksandSemibold
+                                                          .copyWith(
+                                                        fontSize: Dimensions
+                                                            .fontSizeFourteen,
+                                                      )),
+                                                  Text(
+                                                      "Drop-off : ${trip.dropOffTime}",
+                                                      maxLines: 2,
+                                                      style: quicksandSemibold
+                                                          .copyWith(
+                                                        fontSize: Dimensions
+                                                            .fontSizeFourteen,
+                                                      )),
+                                                ]),
                                           ),
-                                        ),
+                                          IconButton(
+                                            onPressed: () {
+                                              final trip = controller
+                                                  .filteredTrips[index];
+                                              final tripNo = trip.tripNo;
+                                              final String apiUrl =
+                                                  "${baseUrl}/Trip_list?xsornum=$tripNo";
 
-                                        if (trip.tripType == 'TMS' &&
-                                            (trip.vehicleNo ?? '').isNotEmpty)
-                                          Text(
-                                              "Vehicle Number : ${trip
-                                                  .vehicleNo}",
-                                              style: quicksandSemibold.copyWith(
-                                                fontSize: Dimensions
-                                                    .fontSizeFourteen,
-                                              )),
-                                              Text(
-                                                  "Driver Name : ${trip
-                                                      .driverName}",
-                                                  style: quicksandSemibold
-                                                      .copyWith(
-                                                    fontSize: Dimensions
-                                                        .fontSizeFourteen,
-                                                  )),
-                                              Text(
-                                                  "Driver Phone : ${trip
-                                                      .driverPhone}",
-                                                  style: quicksandSemibold
-                                                      .copyWith(
-                                                    fontSize: Dimensions
-                                                        .fontSizeFourteen,
-                                                  )),
-                                              if
-                                              (trip.pickVendor != null && trip.pickVendor
-                                              !.isNotEmpty)
-                                        Text(
-                                            "Vendor Name : ${trip.pickVendor}",
-                                            style: quicksandSemibold
-                                                .copyWith(
-                                              fontSize: Dimensions
-                                                  .fontSizeFourteen,
-                                            )),
-                                        Text(
-                                          "From: ${trip.from} → To: ${trip.to}",
-                                          style: quicksandSemibold
-                                              .copyWith(
-                                            fontSize: Dimensions
-                                                .fontSizeFourteen,
-                                          ),
-                                        ),
-                                        Text(
-                                            "Billing Unit : ${trip
-                                                .billingUnit}",
-                                            maxLines: 2,
-                                            style: quicksandSemibold
-                                                .copyWith(
-                                              fontSize: Dimensions
-                                                  .fontSizeFourteen,
-                                            )),
-                                      ]),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    final trip = controller
-                                        .filteredTrips[index];
-                                    // Extract the trip number
-                                    final tripNo = trip
-                                        .tripNo; // Assuming tripNo corresponds to 'xsornum' in API
+                                              // Determine the route based on selected trip type
+                                              String route;
+                                              switch (controller
+                                                  .selectedOption.value) {
+                                                case "TMS":
+                                                  route =
+                                                      RoutesName.updateTmsTrip;
+                                                  break;
+                                                case "RENTAL":
+                                                  route = RoutesName
+                                                      .updateRentalTrip;
+                                                  break;
+                                                case "3MS":
+                                                default:
+                                                  route =
+                                                      RoutesName.update3msTrip;
+                                                  break;
+                                              }
 
-                                    // Construct API URL with tripNo
-                                    final String apiUrl = "http://103.250.68.75/api/v1/Trip_list?xsornum=$tripNo";
-
-                                    // Ensure trip is converted to a Map<String, dynamic>
-                                    Get.toNamed(
-                                      controller.selectedOption.value == "TMS"
-                                          ? RoutesName
-                                          .updateTmsTrip // Use the route name from RoutesName
-                                          : RoutesName.update3msTrip,
-                                      // Use the route name from RoutesName
-                                      arguments: {
-                                        "tripNo": tripNo,
-                                        "tripData": jsonDecode(jsonEncode(trip.toJson())), // Ensure it's a Map
-                                        "apiUrl": apiUrl,
-                                      },
+                                              Get.toNamed(
+                                                route,
+                                                arguments: {
+                                                  "tripNo": tripNo,
+                                                  "tripData": jsonDecode(
+                                                      jsonEncode(
+                                                          trip.toJson())),
+                                                  "apiUrl": apiUrl,
+                                                },
+                                              );
+                                            },
+                                            icon: Icon(
+                                              Icons.arrow_forward_ios_outlined,
+                                              color: AppColor.neviBlue,
+                                            ),
+                                          )
+                                        ],
+                                      ),
                                     );
                                   },
-                                  icon: Icon(
-                                    Icons.arrow_forward_ios_outlined,
-                                    color: AppColor.neviBlue,
-                                  ),
-                                )
-
-
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    )),
+                                ),
+                              )),
                   ],
                 ),
               ),

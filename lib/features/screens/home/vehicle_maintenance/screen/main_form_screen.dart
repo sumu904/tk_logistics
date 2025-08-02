@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:tk_logistics/common/widgets/custom_outlined_button.dart';
-import 'package:tk_logistics/features/screens/home/vehicle_maintenance/screen/task_info_screen.dart';
-import 'package:tk_logistics/features/screens/home/vehicle_maintenance/screen/vehicle_maintenance_screen.dart';
-
 import '../../../../../common/widgets/custom_button.dart';
 import '../../../../../common/widgets/custom_indicator.dart';
 import '../../../../../common/widgets/loading_cntroller.dart';
@@ -18,6 +14,7 @@ class MainFormScreen extends StatelessWidget {
   final VoidCallback? onSuccess;
 
   MainFormScreen({this.onSuccess, super.key});
+
   final MainFormController controller = Get.put(MainFormController());
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final loadingController = Get.find<LoadingController>();
@@ -42,25 +39,46 @@ class MainFormScreen extends StatelessWidget {
     final mainFormData = await controller.collectMainFormDataLocally();
     print("Collected main form data: $mainFormData");
 
+    // NEW: Set xintime, xlotime, xouttime
+    final xintime = DateTime.tryParse(mainFormData['xintime'] ?? '');
+    final xlotime = DateTime.tryParse(mainFormData['xlotime'] ?? '');
+    final xouttime = DateTime.tryParse(mainFormData['xouttime'] ?? '');
 
+    taskController.inTime.value = xintime;
+    taskController.estOutTime.value = xlotime;
+    taskController.actOutTime.value = xouttime;
 
-   /* controller.validateMainForm.add(mainFormData.remove('Maintenance_details')); // Add main form data to entries list
+    /* controller.validateMainForm.add(mainFormData.remove('Maintenance_details')); // Add main form data to entries list
     print("Entries after adding data: ${controller.validateMainForm}");*/
 
     // Now pass data to TaskInfoController
     taskController.maintenanceData.value = mainFormData;
     taskController.selectedVehicle.value = mainFormData['vehicle_code'];
-    taskController.vehicleNumberController.text = mainFormData['vehicle_number'];
+    taskController.vehicleNumberController.text =
+    mainFormData['vehicle_number'];
     taskController.driverNameController.text = mainFormData['driver_name'];
     taskController.driverPhoneController.text = mainFormData['driver_phone'];
     taskController.selectedWorkshopType.value = mainFormData['workshop_type'];
     taskController.workshopNameController.text = mainFormData['workshop_name'];
     taskController.costController.text = mainFormData['total_cost'];
-    taskController.selectedDate.value = DateFormat('yyyy-MM-dd').parse(mainFormData['xdate']);
-    taskController.maintenanceID.value = "TEMP-${DateTime.now().millisecondsSinceEpoch}";
+    taskController.selectedDate.value =
+        DateFormat('yyyy-MM-dd').parse(mainFormData['xdate']);
+    taskController.maintenanceID.value = "TEMP-${DateTime
+        .now()
+        .millisecondsSinceEpoch}";
+
+    taskController.inTimeController.text = xintime != null
+        ? DateFormat('yyyy-MM-dd HH:mm').format(xintime)
+        : '';
+    taskController.estOutTimeController.text = xlotime != null
+        ? DateFormat('yyyy-MM-dd HH:mm').format(xlotime)
+        : '';
+    taskController.actOutTimeController.text = xouttime != null
+        ? DateFormat('yyyy-MM-dd HH:mm').format(xouttime)
+        : '';
 
     if (onSuccess != null) {
-      onSuccess!();  // You can navigate or update the UI as needed
+      onSuccess!(); // You can navigate or update the UI as needed
     }
   }
 
@@ -101,7 +119,7 @@ class MainFormScreen extends StatelessWidget {
                       ),
                       Expanded(
                           child: buildReadOnlyField(
-                              "Vehicle Number",
+                              "Vehicle Regn No.",
                               controller.selectedVehicleNumbers,
                               controller.vehicleNumberController)),
                     ]),
@@ -122,84 +140,78 @@ class MainFormScreen extends StatelessWidget {
                                 controller.driverPhoneController)),
                       ],
                     ),
-                    SizedBox(
-                      height: 5,
-                    ),
-
                     /// DATE (Auto-generated)
-                    InkWell(
-                      onTap: () {
-                        _selectDate(context);
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: Dimensions.paddingSizeEight,
-                          vertical: Dimensions.paddingSizeTwelve,
+                    buildDateTimeField(
+                      "In-Time",
+                      controller.inTime,
+                      controller: controller.inTimeController,
+                      required: true,
+                      onPickDateTime: controller.pickDateTime, // ✅ this is passed properly now
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: buildDateTimeField(
+                            "Est. Out-Time",
+                            controller.estOutTime,
+                            controller: controller.estOutTimeController,
+                            required: true,
+                            onPickDateTime: controller.pickDateTime, // ✅ this is passed properly now
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColor.green, width: 1.5),
-                          borderRadius: BorderRadius.circular(12),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: buildDateTimeField(
+                            "Actual Out-Time",
+                            controller.actOutTime,
+                            controller: controller.actOutTimeController,
+                            required: false,
+                            onPickDateTime: controller.pickDateTime, // ✅ this is passed properly now
+                          ),
+
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Obx(() => Text(
-                                  controller.selectedDate.value == null
-                                      ? "Pick a date to view trips"
-                                      : DateFormat('yyyy-MM-dd').format(
-                                          controller.selectedDate.value!),
-                                  // Formats only date
-                                  style: quicksandRegular.copyWith(
-                                      fontSize: Dimensions.fontSizeFourteen),
-                                )),
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              color: AppColor.green,
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
                     SizedBox(
                       height: 12,
                     ),
                     Row(
                       children: [
+                        // First: Workshop Type Dropdown
                         Expanded(
                           child: buildSearchableDropdown(
                             "Workshop Type",
                             controller.workshopTypes,
                             controller.selectedWorkshopType,
+                            onSelected: (value) {
+                              controller.onWorkshopTypeChanged(value);
+                            },
                           ),
                         ),
-                        SizedBox(
-                          width: 10,
-                        ),
+                        SizedBox(width: 10),
+
+                        // Second: Workshop Name (either TextField or Dropdown based on type)
                         Expanded(
                           child: Obx(() {
-                            return buildTextField(
-                              "Workshop Name",
-                              "", // Keep the value of the text field empty
-                              readOnly: controller.selectedWorkshopType.value !=
-                                  "3rd Party Workshop",
-                              // Read-only if not 3rd Party Workshop
-                              controller: controller
-                                          .selectedWorkshopType.value !=
-                                      "3rd Party Workshop"
-                                  ? TextEditingController(
-                                      text:
-                                          "T.K. Central") // Set default placeholder value
-                                  : controller.workshopNameController,
-                              // Use the actual controller for 3rd Party Workshop
-                              style: quicksandSemibold.copyWith(
-                                color: controller.selectedWorkshopType.value !=
-                                        "3rd Party Workshop"
-                                    ? AppColor
-                                        .grey2 // Text color set to gray 2 for read-only
-                                    : AppColor
-                                        .green, // Default color for editable text
-                              ),
-                            );
+                            if (controller.selectedWorkshopType.value == "3rd Party Workshop") {
+                              return buildSearchableDropdown(
+                                "Workshop Name",
+                                controller.workshopNameList,
+                                controller.selectedWorkshopName,
+                                onSelected: (value) {
+                                  controller.selectedWorkshopName.value = value;
+                                  controller.workshopNameController.text = value;
+                                },
+                              );
+                            } else {
+                              return buildTextField(
+                                "Workshop Name",
+                                "",
+                                readOnly: true,
+                                controller: TextEditingController(text: "T.K. Central"),
+                                style: quicksandSemibold.copyWith(color: AppColor.grey2),
+                              );
+                            }
                           }),
                         ),
                       ],
@@ -213,7 +225,8 @@ class MainFormScreen extends StatelessWidget {
                     SizedBox(
                       height: 30,
                     ),
-                    Obx(() => loadingController.isSubmitting.value
+                    Obx(() =>
+                    loadingController.isSubmitting.value
                         ? spinkit // Show loader while submission is in progress
                         : CustomButton(
                       width: 120,
@@ -237,31 +250,56 @@ class MainFormScreen extends StatelessWidget {
                     ),
 
                     SizedBox(height: 30,),
-                    Obx(() => controller.records.isEmpty
+                    Obx(() =>
+                    controller.records.isEmpty
                         ? Center(child: Text("No records found."))
                         : SingleChildScrollView(
                       //scrollDirection: Axis.horizontal,
                       child: Container(
                         decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(5),
-                            border: Border.all(width: 1,color: AppColor.neviBlue)
+                            border: Border.all(
+                                width: 1, color: AppColor.neviBlue)
                         ),
                         child: DataTable(
                           columnSpacing: 22,
                           headingRowColor:
-                          MaterialStateColor.resolveWith((states) => AppColor.neviBlue),
+                          MaterialStateColor.resolveWith((states) =>
+                          AppColor.neviBlue),
                           columns: [
-                            DataColumn(label: Expanded(child: Text("Vehicle No.",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen,color: AppColor.white)))),
-                            DataColumn(label: Expanded(child: Text("Date",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen,color: AppColor.white)))),
-                            DataColumn(label: Expanded(child: Text("Workshop Type",textAlign: TextAlign.center,style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen,color: AppColor.white)))),
-                            DataColumn(label: Expanded(child: Text("Cost",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen,color: AppColor.white)))),
+                            DataColumn(label: Expanded(child: Text(
+                                "Vehicle No.", style: quicksandBold.copyWith(
+                                fontSize: Dimensions.fontSizeFourteen,
+                                color: AppColor.white)))),
+                            DataColumn(label: Expanded(child: Text("Date",
+                                style: quicksandBold.copyWith(
+                                    fontSize: Dimensions.fontSizeFourteen,
+                                    color: AppColor.white)))),
+                            DataColumn(label: Expanded(child: Text(
+                                "Workshop Type", textAlign: TextAlign.center,
+                                style: quicksandBold.copyWith(
+                                    fontSize: Dimensions.fontSizeFourteen,
+                                    color: AppColor.white)))),
+                            DataColumn(label: Expanded(child: Text("Cost",
+                                style: quicksandBold.copyWith(
+                                    fontSize: Dimensions.fontSizeFourteen,
+                                    color: AppColor.white)))),
                           ],
                           rows: controller.records.map((record) {
                             return DataRow(cells: [
-                              DataCell(Text(record["maintenanceDate"] ?? "",style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen))),
-                              DataCell(Text(record["vehicleNumber"] ?? "",style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen))),
-                              DataCell(Text(record["workshopType"] ?? "",textAlign: TextAlign.center,style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen))),
-                              DataCell(Text(record["cost"] ?? "",style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen))),
+                              DataCell(Text(record["maintenanceDate"] ?? "",
+                                  style: quicksandRegular.copyWith(
+                                      fontSize: Dimensions.fontSizeFourteen))),
+                              DataCell(Text(record["vehicleNumber"] ?? "",
+                                  style: quicksandRegular.copyWith(
+                                      fontSize: Dimensions.fontSizeFourteen))),
+                              DataCell(Text(record["workshopType"] ?? "",
+                                  textAlign: TextAlign.center,
+                                  style: quicksandRegular.copyWith(
+                                      fontSize: Dimensions.fontSizeFourteen))),
+                              DataCell(Text(record["cost"] ?? "",
+                                  style: quicksandRegular.copyWith(
+                                      fontSize: Dimensions.fontSizeFourteen))),
                             ]);
                           }).toList(),
                         ),
@@ -271,6 +309,89 @@ class MainFormScreen extends StatelessWidget {
                   ]);
                 }))));
   }
+}
+
+Widget buildDateTimeField(
+    String label,
+    Rx<DateTime?> date, {
+      required TextEditingController controller,
+      required Future<void> Function(Rx<DateTime?>) onPickDateTime, // 👈 Add this
+      bool required = false,
+    }) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeEight),
+    child: Obx(() {
+      bool isFieldEmpty = date.value == null;
+      bool hasDate = !isFieldEmpty;
+
+      Color borderColor = (required && isFieldEmpty)
+          ? AppColor.primaryRed
+          : hasDate
+          ? AppColor.neviBlue
+          : AppColor.green;
+
+      Color labelColor = (required && isFieldEmpty)
+          ? AppColor.primaryRed
+          : hasDate
+          ? AppColor.black
+          : AppColor.black;
+
+      Color iconColor = (required && isFieldEmpty)
+          ? AppColor.primaryRed
+          : hasDate
+          ? AppColor.green
+          : AppColor.green;
+
+      Color textColor = hasDate ? AppColor.black : AppColor.black;
+
+      return TextFormField(
+        readOnly: true,
+        controller: controller,
+        style: quicksandSemibold.copyWith(
+          fontSize: Dimensions.fontSizeFourteen,
+          color: textColor,
+        ),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: quicksandRegular.copyWith(
+            fontSize: Dimensions.fontSizeFourteen,
+            color: labelColor,
+          ),
+          suffixIcon: Icon(
+            Icons.calendar_today,
+            color: iconColor,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(width: 1.5, color: borderColor),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(width: 1.5, color: borderColor),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
+          ),
+        ),
+        validator: (_) {
+          if (required && date.value == null) {
+            return "This field is required";
+          }
+          return null;
+        },
+        onTap: () async {
+          await onPickDateTime(date); // ✅ fixed here
+        },
+      );
+    }),
+  );
+}
+
 
   Widget buildSearchableDropdown(
       String label, List<String> items, RxnString selectedValue,
@@ -519,7 +640,6 @@ class MainFormScreen extends StatelessWidget {
       }),
     );
   }
-}
 
 Widget buildTextField(String label, String initialValue,
     {bool readOnly = false,

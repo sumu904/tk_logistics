@@ -41,6 +41,14 @@ class TaskInfoController extends GetxController {
   RxList<String> tyreChangeTypes = RxList<String>();
   RxnString selectedTyreConditionType = RxnString();
   RxList<String> tyreConditionTypes = <String>[].obs;
+
+  Rx<DateTime?> inTime = Rx<DateTime?>(null);
+  Rx<DateTime?> estOutTime = Rx<DateTime?>(null);
+  Rx<DateTime?> actOutTime = Rx<DateTime?>(null);
+  late TextEditingController inTimeController;
+  late TextEditingController estOutTimeController;
+  late TextEditingController actOutTimeController;
+
   final remarksController = TextEditingController();
 
   // Tyre Replacement Fields
@@ -73,6 +81,28 @@ class TaskInfoController extends GetxController {
     fetchSubTypes();
     fetchTyreChangeTypes();
     fetchTyreConditionTypes();
+
+    inTimeController = TextEditingController();
+    estOutTimeController = TextEditingController();
+    actOutTimeController = TextEditingController();
+
+    ever(inTime, (DateTime? val) {
+      inTimeController.text = val != null
+          ? DateFormat('yyyy-MM-dd HH:mm').format(val)
+          : '';
+    });
+
+    ever(estOutTime, (DateTime? val) {
+      estOutTimeController.text = val != null
+          ? DateFormat('yyyy-MM-dd HH:mm').format(val)
+          : '';
+    });
+
+    ever(actOutTime, (DateTime? val) {
+      actOutTimeController.text = val != null
+          ? DateFormat('yyyy-MM-dd HH:mm').format(val)
+          : '';
+    });
   }
 
   @override
@@ -261,6 +291,11 @@ class TaskInfoController extends GetxController {
   }
 
   Future<void> submitMaintenanceData() async {
+    if (inTime.value == null) {
+      Get.snackbar("Validation Error", "In-Time must be selected");
+      return;
+    }
+
     if (isSubmitting) {
       showSnack("Info", "Already submitting, please wait.", AppColor.primaryRed);
       return;
@@ -278,6 +313,8 @@ class TaskInfoController extends GetxController {
 
     isSubmitting = true;
 
+    final xDate = DateFormat('yyyy-MM-dd').format(inTime.value!);
+
     final url = Uri.parse('${baseUrl}/maintenanceheader/');
     final data = {
       "zid": 100010,
@@ -285,9 +322,20 @@ class TaskInfoController extends GetxController {
       "vehicle_number": vehicleNumberController.text,
       "driver_name": driverNameController.text,
       "driver_phone": driverPhoneController.text,
-      "xdate": DateFormat('yyyy-MM-dd').format(selectedDate.value),
+      "xdate": xDate,
+      "xintime": inTime.value != null
+          ? DateFormat('yyyy-MM-dd HH:mm:ss').format(inTime.value!)
+          : null,
+      "xlotime": estOutTime.value != null
+          ? DateFormat('yyyy-MM-dd HH:mm:ss').format(estOutTime.value!)
+          : null,
+      "xouttime": actOutTime.value != null
+          ? DateFormat('yyyy-MM-dd HH:mm:ss').format(actOutTime.value!)
+          : null,
       "workshop_type": selectedWorkshopType.value,
-      "workshop_name": workshopNameController.text,
+      "workshop_name": mainFormController.selectedWorkshopType.value == "T.K. Central Workshop"
+          ? "T.K. Central Workshop"
+          : mainFormController.selectedWorkshopName.value ?? "",
       "zemail": userController.user.value?.username ?? '',
       "total_cost": double.tryParse(costController.text) ?? 0.0,
       "Maintenance_details": entries.map((entry) => {
@@ -298,6 +346,7 @@ class TaskInfoController extends GetxController {
         "old_tyre_sn": entry["Old Tyre SN"] ?? "",
         "new_tyre_condition": entry["New Tyre Condition"] ?? "",
         "new_tyre_sn": entry["New Tyre SN"] ?? "",
+        "zid": 100010,
       }).toList()
     };
 

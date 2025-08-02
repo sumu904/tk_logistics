@@ -200,7 +200,7 @@ class FuelEntryList extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                "Vehicle Number : ${entry['xvmregno'] ?? 'Unknown'}",
+                                "Vehicle Regn No. : ${entry['xvmregno'] ?? 'Unknown'}",
                                 style: quicksandSemibold.copyWith(
                                     fontSize: Dimensions.fontSizeFourteen),
                               ),

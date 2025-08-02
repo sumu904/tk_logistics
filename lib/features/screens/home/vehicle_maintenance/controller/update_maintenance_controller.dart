@@ -3,21 +3,17 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 import '../../../../../const/const_values.dart';
 import '../../../../../util/app_color.dart';
 import '../../../../auth/login/controller/user_controller.dart';
 
-class MainFormController extends GetxController {
+class UpdateMaintenanceController extends GetxController {
   final userController = Get.find<UserController>();
-
-  var transactionNumber = "System Generate".obs;
-
   final TextEditingController vehicleNumberController = TextEditingController();
   final TextEditingController driverNameController = TextEditingController();
   final TextEditingController driverPhoneController = TextEditingController();
   var maintenanceDateController = TextEditingController();
-  var workshopNameController = TextEditingController();
+  var workshopNameController = RxnString();
   var costController = TextEditingController();
 
   var latestEntry = Rxn<Map<String, String>>();
@@ -31,7 +27,6 @@ class MainFormController extends GetxController {
   Rx<DateTime?> inTime = Rx<DateTime?>(null);
   Rx<DateTime?> estOutTime = Rx<DateTime?>(null);
   Rx<DateTime?> actOutTime = Rx<DateTime?>(null);
-
   late TextEditingController inTimeController;
   late TextEditingController estOutTimeController;
   late TextEditingController actOutTimeController;
@@ -42,14 +37,16 @@ class MainFormController extends GetxController {
   RxList<String> vehicleID = <String>[].obs;
   RxList<String> vehicleNumbers = <String>[].obs;
   RxList<Map<String, dynamic>> vehicleData = <Map<String, dynamic>>[].obs;
+
   var records = <Map<String, String>>[].obs;
 
-  var selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).obs;
-  void pickDate(DateTime date) => selectedDate.value = DateTime(date.year, date.month, date.day);
+  var selectedDate = DateTime.now().obs;
+  void pickDate(DateTime date) {
+    selectedDate.value = DateTime(date.year, date.month, date.day);
+  }
 
   final List<String> workshopTypes = ["T.K. Central Workshop", "3rd Party Workshop"];
 
-  // 3rd party workshop dropdown list
   var workshopNameList = <String>[].obs;
   var selectedWorkshopName = RxnString();
 
@@ -64,21 +61,15 @@ class MainFormController extends GetxController {
     actOutTimeController = TextEditingController();
 
     ever(inTime, (DateTime? val) {
-      inTimeController.text = val != null
-          ? DateFormat('yyyy-MM-dd HH:mm').format(val)
-          : '';
+      inTimeController.text = val != null ? DateFormat('yyyy-MM-dd HH:mm').format(val) : '';
     });
 
     ever(estOutTime, (DateTime? val) {
-      estOutTimeController.text = val != null
-          ? DateFormat('yyyy-MM-dd HH:mm').format(val)
-          : '';
+      estOutTimeController.text = val != null ? DateFormat('yyyy-MM-dd HH:mm').format(val) : '';
     });
 
     ever(actOutTime, (DateTime? val) {
-      actOutTimeController.text = val != null
-          ? DateFormat('yyyy-MM-dd HH:mm').format(val)
-          : '';
+      actOutTimeController.text = val != null ? DateFormat('yyyy-MM-dd HH:mm').format(val) : '';
     });
   }
 
@@ -88,7 +79,9 @@ class MainFormController extends GetxController {
       fetchWorkshopNames();
     } else {
       selectedWorkshopName.value = '';
+/*
       workshopNameController.clear();
+*/
     }
   }
 
@@ -145,7 +138,7 @@ class MainFormController extends GetxController {
     vehicleID.clear();
 
     while (hasNextPage) {
-      String apiUrl = "$baseUrl/vehicle_list?page=$page";
+      String apiUrl = "http://103.250.68.75/api/v1/vehicle_list?page=$page";
 
       try {
         final response = await http.get(Uri.parse(apiUrl));
@@ -155,7 +148,6 @@ class MainFormController extends GetxController {
 
           if (data.containsKey('results') && data['results'] is List) {
             final newVehicles = List<Map<String, dynamic>>.from(data['results']);
-
             vehicleData.addAll(newVehicles);
 
             for (var vehicle in newVehicles) {
@@ -182,15 +174,8 @@ class MainFormController extends GetxController {
     }
   }
 
-  String? lastSelectedVehicle;
-  String? lastSelectedVehicleNumbers;
-  String? lastSelectedDriverName;
-  String? lastSelectedDriverMobile;
-
   void onVehicleSelected(String selectedVehicle) {
     var emptyValue = "Not available";
-    lastSelectedVehicle = selectedVehicle;
-
     var selectedVehicleData = vehicleData.firstWhere(
           (item) => item['xvehicle'] == selectedVehicle,
       orElse: () => <String, dynamic>{},
@@ -206,29 +191,11 @@ class MainFormController extends GetxController {
       selectedDriverMobile.value = emptyValue;
     }
 
-    if (selectedVehicle == lastSelectedVehicle) {
-      lastSelectedVehicleNumbers = selectedVehicleNumbers.value;
-      lastSelectedDriverName = selectedDriverName.value;
-      lastSelectedDriverMobile = selectedDriverMobile.value;
-    }
-
-    vehicleNumberController.text = lastSelectedVehicleNumbers!;
-    driverNameController.text = lastSelectedDriverName!;
-    driverPhoneController.text = lastSelectedDriverMobile!;
+    vehicleNumberController.text = selectedVehicleNumbers.value;
+    driverNameController.text = selectedDriverName.value;
+    driverPhoneController.text = selectedDriverMobile.value;
 
     update();
-  }
-
-  void selectDate(BuildContext context) async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null) {
-      selectedDate.value = picked;
-    }
   }
 
   void addRecord() {
@@ -258,17 +225,16 @@ class MainFormController extends GetxController {
       return;
     }
 
-    String formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate.value!);
+    String formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate.value);
 
     records.assignAll([
       {
-        "transactionNumber": transactionNumber.value,
         "vehicleNumber": selectedVehicle.value!,
         "maintenanceDate": formattedDate,
         "workshopType": selectedWorkshopType.value!,
         "workshopName": selectedWorkshopType.value == "T.K. Central Workshop"
             ? ""
-            : selectedWorkshopName.value ?? "",
+            : selectedWorkshopName.value!,
         "cost": costController.text.trim(),
       }
     ]);
@@ -298,15 +264,12 @@ class MainFormController extends GetxController {
 
     modifiedFormData.assignAll(data);
     modifiedFormData.remove('Maintenance_details');
-
-    print("Modified form data: $modifiedFormData");
-
     return modifiedFormData;
   }
 
   void clearFields() {
     costController.clear();
-    workshopNameController.clear();
+    selectedWorkshopName.value = null;
     vehicleNumberController.clear();
     driverNameController.clear();
     driverPhoneController.clear();
@@ -315,9 +278,86 @@ class MainFormController extends GetxController {
     selectedVehicle.value = null;
     selectedDriverName.value = "";
     selectedDriverMobile.value = "";
-    selectedWorkshopName.value = "";
     inTimeController.dispose();
     estOutTimeController.dispose();
     actOutTimeController.dispose();
+  }
+
+  Future<void> loadMaintenanceDetails(String maintenanceId) async {
+    try {
+      final url = "${baseUrl}/maintenance/$maintenanceId/";
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // Update the controller fields
+        selectedVehicle.value = data["vehicle_code"];
+        vehicleNumberController.text = data["vehicle_number"] ?? "";
+        driverNameController.text = data["driver_name"] ?? "";
+        driverPhoneController.text = data["driver_phone"] ?? "";
+        selectedWorkshopType.value = data["workshop_type"];
+        selectedWorkshopName.value = data["workshop_name"] ?? "";
+        costController.text = data["total_cost"] ?? "";
+
+        inTime.value = DateTime.tryParse(data["xintime"] ?? "");
+        estOutTime.value = DateTime.tryParse(data["xlotime"] ?? "");
+        actOutTime.value = DateTime.tryParse(data["xouttime"] ?? "");
+
+        // Set initial record for the table (if needed)
+        final formattedDate = data["xdate"] ?? "";
+        records.assignAll([
+          {
+            "vehicleNumber": selectedVehicle.value ?? "",
+            "maintenanceDate": formattedDate,
+            "workshopType": selectedWorkshopType.value ?? "",
+            "workshopName": selectedWorkshopName.value ?? "",
+            "cost": costController.text,
+          }
+        ]);
+      } else {
+        print("Failed to fetch maintenance details. Status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error loading maintenance details: $e");
+    }
+  }
+
+  Future<bool> updateMaintenance(String maintenanceId) async {
+    final url = "$baseUrl/maintenance/$maintenanceId/";
+
+    // Collect form data
+    final body = await collectMainFormDataLocally();
+
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode(body),
+      );
+
+      print("PUT $url response status: ${response.statusCode}");
+      print("PUT $url response body: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        Get.snackbar("Success", "Maintenance updated successfully",
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.green,
+            colorText: Colors.white);
+        return true;
+      } else {
+        Get.snackbar("Error", "Failed to update maintenance: ${response.statusCode}",
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red,
+            colorText: Colors.white);
+        return false;
+      }
+    } catch (e) {
+      Get.snackbar("Error", "Exception: $e",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+      return false;
+    }
   }
 }

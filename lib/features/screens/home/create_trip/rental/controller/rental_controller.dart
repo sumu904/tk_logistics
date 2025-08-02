@@ -1,68 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'dart:convert';
-
 import '../../../../../../const/const_values.dart';
 import '../../../../../../util/app_color.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import '../../../../../auth/login/controller/user_controller.dart';
 
-class TmsController extends GetxController {
+class RentalController extends GetxController {
   final userController = Get.find<UserController>();
-  RxInt currentPage = 1.obs;
-  RxBool isLoadingMore = false.obs;
-  RxBool hasMoreData = true.obs;
+  // Dropdown Selections
   RxList<String> locations = <String>[].obs;
   RxList<String> billingUnits = <String>[].obs;
   RxList<String> cargoTypes = <String>[].obs;
-  RxList<String> tripTypes = <String>[].obs;
- // RxList<String> segments = <String>[].obs;
+  RxList<String> segments = <String>[].obs;
+  RxList<String> pickSuppliers = <String>[].obs;
+  RxList<String> vehicleLists = <String>[].obs;
 
   var from = RxnString();
   var to = RxnString();
+  var vehicleList = RxnString();
   var billingUnit = RxnString();
+  var pickSupplier = RxnString();
   RxList<String> cargoType = <String>[].obs;
   var tripType = RxnString();
-  //var segment = RxnString();
-  RxnString selectedVehicle = RxnString();
-  var vehicleNo = RxnString();
+  var segment = RxnString();
+  var deliveryStatus = RxnString();
   var isTripCreated = false.obs;
+  RxBool isLoading = false.obs;
+  var selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).obs;
+  void pickDate(DateTime date) {
+    selectedDate.value = DateTime(date.year, date.month, date.day); // Removes time
+  }
+
+  int currentPage = 1;
+  bool isFetching = false;
+  bool hasMore = true;
+
+  RxnString selectedVehicle = RxnString();
+  var selectedVehicleNumbers = "".obs;
+  var selectedDriverName = "".obs;
+  var selectedDriverMobile = "".obs;
+  var selectedVendorName = ''.obs;
+  RxList<String> vehicleID = <String>[].obs;
+  RxList<Map<String, dynamic>> vehicleData = <Map<String, dynamic>>[].obs;
 
   Rx<DateTime?> pickupDate = Rx<DateTime?>(null);
   Rx<DateTime?> dropOffDate = Rx<DateTime?>(null);
   late TextEditingController pickupDateController;
   late TextEditingController dropOffDateController;
 
-  var selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).obs;
-  void pickDate(DateTime date) {
-    selectedDate.value = DateTime(date.year, date.month, date.day);
-  }
-
-  var selectedVehicleNumbers = "".obs;
-  var selectedDriverName = "".obs;
-  var selectedDriverMobile = "".obs;
-  RxBool isLoading = false.obs;
-
-  var challanText = RxString("");
-  RxList<String> vehicleID = <String>[].obs;
-  RxList<Map<String, dynamic>> vehicleData = <Map<String, dynamic>>[].obs;  // RxString for reactive updates
-
-  final TextEditingController loadingPointController = TextEditingController();
-  final TextEditingController unloadingPointController = TextEditingController();
-  final TextEditingController currentDateController = TextEditingController();
-  final TextEditingController cargoWeightController = TextEditingController();
-  final TextEditingController serviceChargeController = TextEditingController();
-  final TextEditingController startTimeController = TextEditingController();
-  final TextEditingController unloadingTimeController = TextEditingController();
-  final TextEditingController podController = TextEditingController();
-  final TextEditingController pickSupplierController = TextEditingController();
-  final TextEditingController distanceController = TextEditingController();
-  final TextEditingController noteController = TextEditingController();
-  final TextEditingController vehicleNumberController = TextEditingController();
-  final TextEditingController driverNameController = TextEditingController();
-  final TextEditingController driverPhoneController = TextEditingController();
-
+  // Text Controllers
+  TextEditingController loadingPointController = TextEditingController();
+  TextEditingController unloadingPointController = TextEditingController();
+  TextEditingController currentDateController = TextEditingController();
+  //TextEditingController vehicleIDController = TextEditingController();
+  //TextEditingController vehicleNoController = TextEditingController();
+  TextEditingController vehicleNumberController = TextEditingController();
+  TextEditingController driverNameController = TextEditingController();
+  TextEditingController driverPhoneController = TextEditingController();
+  TextEditingController vendorNameController = TextEditingController();
+  TextEditingController cargoWeightController = TextEditingController();
+  TextEditingController serviceChargeController = TextEditingController();
+  TextEditingController startTimeController = TextEditingController();
+  TextEditingController unloadingTimeController = TextEditingController();
+  TextEditingController podController = TextEditingController();
+  TextEditingController pickSupplierController = TextEditingController();
+  TextEditingController distanceController = TextEditingController();
+  TextEditingController noteController = TextEditingController();
 
   @override
   void onInit() {
@@ -70,13 +76,9 @@ class TmsController extends GetxController {
     fetchLocations();
     fetchVehicleNumbers();
     fetchBillingUnits();
+    //fetchSuppliers();
     fetchCargoType();
-    fetchTypeofTrip();
-    //fetchSegment();
-    /* if (challanText.value.isEmpty) {
-      challanText.value = "Auto Generated";
-    }// Set initial date*/
-
+    fetchSegment();
     pickupDateController = TextEditingController();
     dropOffDateController = TextEditingController();
 
@@ -119,7 +121,6 @@ class TmsController extends GetxController {
     }
   }
 
-  /// Fetch locations from API and extract `xcode`
   Future<void> fetchLocations({int page = 1}) async {
     String apiUrl = "${baseUrl}/dropdown_list?page=$page&xtype=Load_Unload_Point";
     print("Fetching locations from: $apiUrl");
@@ -175,7 +176,126 @@ class TmsController extends GetxController {
     }
   }
 
+  Future<void> fetchVehicleNumbers() async {
+    int page = 1;
+    bool hasNextPage = true;
+
+    vehicleData.clear(); // Clear before loading all pages
+    vehicleID.clear();
+
+    while (hasNextPage) {
+      String apiUrl = "${baseUrl}/vehicle_list?page=$page";
+      print("Fetching vehicle numbers from: $apiUrl");
+
+      try {
+        final response = await http.get(Uri.parse(apiUrl));
+        print("Response Status Code: ${response.statusCode}");
+        print("Response Body: ${response.body}");
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          print("Decoded JSON (Page $page): $data");
+
+          if (data.containsKey('results') && data['results'] is List) {
+            final List<Map<String, dynamic>> newVehicles =
+            List<Map<String, dynamic>>.from(data['results']);
+
+            // 🔍 Filter only vehicles with xstatus == "Rental"
+            final rentalVehicles = newVehicles.where((vehicle) {
+              final status = vehicle['xstatus']?.toString().toLowerCase();
+              return status == 'rental';
+            }).toList();
+
+            vehicleData.addAll(rentalVehicles);
+
+            for (var vehicle in rentalVehicles) {
+              String vehicleNumber = vehicle['xvehicle'].toString();
+              if (!vehicleID.contains(vehicleNumber)) {
+                vehicleID.add(vehicleNumber);
+              }
+            }
+
+            print("Fetched Rental Vehicles (Page $page): ${rentalVehicles.map((v) => v['xvehicle'])}");
+          } else {
+            print("Unexpected API response format at page $page");
+            hasNextPage = false;
+          }
+
+          if (data['next'] != null) {
+            page++; // go to next page
+          } else {
+            hasNextPage = false;
+          }
+        } else {
+          print("Failed to fetch vehicle numbers on page $page");
+          hasNextPage = false;
+        }
+      } catch (e) {
+        print("Error fetching vehicle numbers: $e");
+        hasNextPage = false;
+      }
+    }
+
+    print("All Rental Vehicle Numbers Fetched (${vehicleID.length}): $vehicleID");
+  }
+
+  // Track the last selected vehicle to maintain persistence
+  String? lastSelectedVehicle;
+  String? lastSelectedVehicleNumbers;
+  String? lastSelectedDriverName;
+  String? lastSelectedDriverMobile;
+  String? lastSelectedVendorName;
+
+  void onVehicleSelected(String selectedVehicle) {
+    var emptyValue = "Not available";
+    lastSelectedVehicle = selectedVehicle; // Update last selected vehicle
+
+    var selectedVehicleData = vehicleData.firstWhere(
+          (item) => item['xvehicle'] == selectedVehicle,
+      orElse: () => <String, dynamic>{},
+    );
+
+    print("Selected Vehicle Data: $selectedVehicleData");
+
+    if (selectedVehicleData.isNotEmpty) {
+      selectedVehicleNumbers.value = selectedVehicleData["xvmregno"]?.toString() ?? emptyValue;
+      selectedDriverName.value = selectedVehicleData["xname"]?.toString() ?? emptyValue;
+      selectedDriverMobile.value = selectedVehicleData['xmobile']?.toString() ?? emptyValue;
+
+      // Set xowner (Vendor Name)
+      selectedVendorName.value = selectedVehicleData['xowner']?.toString() ?? emptyValue;
+    } else {
+      selectedVehicleNumbers.value = emptyValue;
+      selectedDriverName.value = emptyValue;
+      selectedDriverMobile.value = emptyValue;
+      selectedVendorName.value = emptyValue;
+      print("Selected Vehicle Data is not found");
+    }
+
+    // Save the selected values
+    if (selectedVehicle == lastSelectedVehicle) {
+      print("Same vehicle selected. Retaining previous values.");
+      lastSelectedVehicleNumbers = selectedVehicleNumbers.value;
+      lastSelectedDriverName = selectedDriverName.value;
+      lastSelectedDriverMobile = selectedDriverMobile.value;
+      lastSelectedVendorName = selectedVendorName.value;
+      // You can also store lastSelectedVendor if needed
+    }
+
+    // Update controllers
+    vehicleNumberController.text = lastSelectedVehicleNumbers!;
+    driverNameController.text = lastSelectedDriverName!;
+    driverPhoneController.text = lastSelectedDriverMobile!;
+    vendorNameController.text = lastSelectedVendorName!;
+    // vendorController.text is already set above
+
+    // Notify the UI
+    update();
+  }
+
+
   /// Fetch billing unit list from API
+
   Future<void> fetchBillingUnits() async {
     String apiUrl = "${baseUrl}/dropdown_list?xtype=Billing_Unit";
     print("Fetching billing unit from: $apiUrl");
@@ -209,116 +329,39 @@ class TmsController extends GetxController {
     }
   }
 
-  /// Fetch vehicle number list from API
-  Future<void> fetchVehicleNumbers() async {
-    int page = 1;
-    bool hasNextPage = true;
+ /* Future<void> fetchSuppliers() async {
+    String apiUrl = "${baseUrl}/dropdown_list?xtype=Supplier";
+    print("Fetching locations from: $apiUrl");
 
-    vehicleData.clear(); // Clear before loading all pages
-    vehicleID.clear();
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
 
-    while (hasNextPage) {
-      String apiUrl = "${baseUrl}/vehicle_list?page=$page";
-      print("Fetching vehicle numbers from: $apiUrl");
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}"); // Check API Response
 
-      try {
-        final response = await http.get(Uri.parse(apiUrl));
-        print("Response Status Code: ${response.statusCode}");
-        print("Response Body: ${response.body}");
-
-        if (response.statusCode == 200) {
+      if (response.statusCode == 200) {
+        try {
           final data = json.decode(response.body);
-          print("Decoded JSON (Page $page): $data");
+          print("Decoded JSON: $data"); // Ensure data is properly decoded
 
           if (data.containsKey('results') && data['results'] is List) {
-            final List<Map<String, dynamic>> newVehicles =
-            List<Map<String, dynamic>>.from(data['results']);
-
-            // Filter by xstatus == "Own"
-            final ownVehicles = newVehicles.where((vehicle) =>
-            vehicle['xstatus']?.toString().toLowerCase() == 'own').toList();
-
-            // Add to main lists
-            vehicleData.addAll(ownVehicles);
-
-            for (var vehicle in ownVehicles) {
-              String vehicleNumber = vehicle['xvehicle'].toString();
-              if (!vehicleID.contains(vehicleNumber)) {
-                vehicleID.add(vehicleNumber);
-              }
-            }
-
-            print("Fetched Own Vehicles (Page $page): ${ownVehicles.map((v) => v['xvehicle'])}");
+            pickSuppliers.assignAll(List<String>.from(
+                data['results'].map((item) => item['xcode'].toString())));
+            print("Fetched Suppliers: $pickSuppliers"); // Check list before UI updates
           } else {
-            print("Unexpected API response format at page $page");
-            hasNextPage = false;
+            print("Unexpected API Response Format: 'results' key not found or not a List");
           }
-
-          if (data['next'] != null) {
-            page++; // next page
-          } else {
-            hasNextPage = false;
-          }
-        } else {
-          print("Failed to fetch vehicle numbers on page $page");
-          hasNextPage = false;
+        } catch (jsonError) {
+          print("Error decoding JSON: $jsonError");
         }
-      } catch (e) {
-        print("Error fetching vehicle numbers: $e");
-        hasNextPage = false;
+      } else {
+        print("Failed to fetch suppliers: ${response.statusCode}");
       }
+    } catch (e) {
+      print("Error fetching suppliers: $e");
     }
+  }*/
 
-    print("All Own Vehicle Numbers Fetched (${vehicleID.length}): $vehicleID");
-  }
-
-  // Track the last selected vehicle to maintain persistence
-  String? lastSelectedVehicle;
-  String? lastSelectedVehicleNumbers;
-  String? lastSelectedDriverName;
-  String? lastSelectedDriverMobile;
-
-  void onVehicleSelected(String selectedVehicle) {
-    var emptyValue="Not available";
-    lastSelectedVehicle = selectedVehicle; // Update last selected vehicle
-
-    var selectedVehicleData = vehicleData.firstWhere(
-          (item) => item['xvehicle'] == selectedVehicle,
-      orElse: () => <String, dynamic>{},
-    );
-
-    print("Selected Vehicle Data: $selectedVehicleData"); // Debugging line
-
-    if (selectedVehicleData.isNotEmpty) {
-      selectedVehicleNumbers.value = selectedVehicleData["xvmregno"]?.toString() ?? emptyValue;
-      selectedDriverName.value = selectedVehicleData["xname"]?.toString() ?? emptyValue;
-      selectedDriverMobile.value = selectedVehicleData['xmobile']?.toString() ?? emptyValue;
-    } else {
-      // Reset to default values when no data is found
-      selectedVehicleNumbers.value = emptyValue;
-      selectedDriverName.value = emptyValue;
-      selectedDriverMobile.value = emptyValue;
-      print("Selected Vehicle Data is not found");
-    }
-
-    // Save the selected values
-    if (selectedVehicle == lastSelectedVehicle) {
-      print("Same vehicle selected. Retaining previous values.");
-      lastSelectedVehicleNumbers = selectedVehicleNumbers.value;
-      lastSelectedDriverName = selectedDriverName.value;
-      lastSelectedDriverMobile = selectedDriverMobile.value;// Do nothing if the vehicle hasn't changed
-    }
-
-    // Update controllers
-    vehicleNumberController.text = lastSelectedVehicleNumbers!;
-    driverNameController.text = lastSelectedDriverName!;
-    driverPhoneController.text = lastSelectedDriverMobile!;
-
-    // Notify the UI to rebuild
-    update();
-  }
-
-///  Fetch cargo type list from API
   Future<void> fetchCargoType() async {
     String apiUrl = "${baseUrl}/dropdown_list?xtype=Cargo_Type";
     print("Fetching cargo type from: $apiUrl");
@@ -353,43 +396,9 @@ class TmsController extends GetxController {
   }
 
   ///  Fetch cargo type list from API
-  Future<void> fetchTypeofTrip() async {
-    String apiUrl = "${baseUrl}/dropdown_list?xtype=Trip_Type";
-    print("Fetching cargo type from: $apiUrl");
 
-    try {
-      final response = await http.get(Uri.parse(apiUrl));
-
-      print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}"); // Check API Response
-
-      if (response.statusCode == 200) {
-        try {
-          final data = json.decode(response.body);
-          print("Decoded JSON: $data"); // Ensure data is properly decoded
-
-          if (data.containsKey('results') && data['results'] is List) {
-            tripTypes.assignAll(List<String>.from(
-                data['results'].map((item) => item['xcode'].toString())));
-            print("Fetched Trip Type: $tripTypes"); // Check list before UI updates
-          } else {
-            print("Unexpected API Response Format: 'results' key not found or not a List");
-          }
-        } catch (jsonError) {
-          print("Error decoding JSON: $jsonError");
-        }
-      } else {
-        print("Failed to fetch trip type: ${response.statusCode}");
-      }
-    } catch (e) {
-      print("Error fetching trip type: $e");
-    }
-  }
-
-  ///  Fetch cargo type list from API
-
-/*  Future<void> fetchSegment() async {
-    String apiUrl = "http://103.250.68.75/api/v1/dropdown_list?xtype=Segment";
+  Future<void> fetchSegment() async {
+    String apiUrl = "${baseUrl}/dropdown_list?xtype=Segment";
     print("Fetching segment from: $apiUrl");
 
     try {
@@ -419,41 +428,41 @@ class TmsController extends GetxController {
     } catch (e) {
       print("Error fetching segment: $e");
     }
-  }*/
+  }
 
-  /// Handle form submission
+  // Function to handle form submission
   Future<void> createTrip() async {
     isLoading.value = true;
 
     Map<String, dynamic> tripData = {
-    "xtype": "TMS",
-    "zid": "100010",
-    "zemail": userController.user.value?.username,
-    "xsdestin": from.value,
-    "xdestin": to.value,
-    "xlpoint": loadingPointController.text,
-    "xulpoint":unloadingPointController.text,
-    "xvehicle": selectedVehicle.value,
-    "xvmregno": selectedVehicleNumbers.value,
-    "xdriver": selectedDriverName.value,
-    "xmobile": selectedDriverMobile.value,
-    "xproj": billingUnit.value,
-    "xdate": selectedDate.value.toIso8601String(),
-    "xinweight":double.tryParse(cargoWeightController.text)?.toStringAsFixed(2),
-    "xtypecat": cargoType.join(", "),
-    "xglref": "GL-56789",
-    "trkm": double.tryParse(distanceController.text)?.toStringAsFixed(2),
-    "xprime": double.tryParse(serviceChargeController.text)?.toStringAsFixed(2),
-    "xouttime": pickupDate.value?.toIso8601String(),
-    "xchallantime": dropOffDate.value?.toIso8601String(),
-    "xmovetype": tripType.value,
-    //"xsagnum": segment.value,
-    "xsornum": "", // This is usually auto-generated by backend
-    "xsup":"",
-    "xrem": noteController.text,
-    "xstatusmove": "1-Open",// Example status
+      "xtype": "RENTAL",
+      "zid": "100010",
+      "zemail": userController.user.value?.username,
+      "xsdestin": from.value,
+      "xdestin": to.value,
+      "xlpoint": loadingPointController.text,
+      "xulpoint":unloadingPointController.text,
+      "xsup": selectedVendorName.value,
+      "xvehicle": selectedVehicle.value,
+      "xvmregno": selectedVehicleNumbers.value,
+      "xdriver": selectedDriverName.value,
+      "xmobile": selectedDriverMobile.value,
+      "xowner": selectedVendorName.value,
+      "xproj": billingUnit.value,
+      "xdate": selectedDate.value.toIso8601String(),
+      "xinweight":double.tryParse(cargoWeightController.text)?.toStringAsFixed(2),
+      "xtypecat": cargoType.join(", "),
+      "xglref": "GL-56789",
+      "trkm": double.tryParse(distanceController.text)?.toStringAsFixed(2),
+      "xprime": double.tryParse(serviceChargeController.text)?.toStringAsFixed(2),
+      "xouttime": pickupDate.value?.toIso8601String(),
+      "xchallantime": dropOffDate.value?.toIso8601String(),
+      "xmovetype": tripType.value,
+      "xsagnum": segment.value,
+      "xsornum": "", // This is usually auto-generated by backend
+      "xrem": noteController.text,
+      "xstatusmove": "1-Open",// Example status
     };
-
 
 
     try {
@@ -480,8 +489,6 @@ class TmsController extends GetxController {
       isLoading.value = false;
     }
   }
-
-  /// Dispose controllers to avoid memory leaks
   @override
   void onClose() {
     cargoWeightController.dispose();
@@ -514,6 +521,7 @@ class TmsController extends GetxController {
     vehicleNumberController.clear();
     driverNameController.clear();
     driverPhoneController.clear();
+    vendorNameController.clear();
 
     // Clear dropdown/selectable Rx values
     to.value = null;
@@ -521,6 +529,7 @@ class TmsController extends GetxController {
     selectedVehicleNumbers.value = "";
     selectedDriverName.value = "";
     selectedDriverMobile.value = "";
+    selectedVendorName.value = "";
     tripType.value = null;
     billingUnit.value = null;
     cargoType.value = [];
@@ -532,5 +541,4 @@ class TmsController extends GetxController {
     billingUnit.refresh();
     // Any other observable field needing manual trigger
   }
-
 }

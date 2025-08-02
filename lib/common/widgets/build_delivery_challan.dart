@@ -9,10 +9,11 @@ import 'package:pdf/widgets.dart';
 // Function to generate a single Delivery Challan section
 
 pw.Widget buildDeliveryChallan(
-    Map<String, dynamic>? tripData, pw.Font banglaFont, Uint8List imageBytes) {
+    Map<String, dynamic>? tripData, Uint8List imageBytes) {
   return pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
+      //pw.SizedBox(height: 20),
       pw.Center(
         child: pw.Text("T.K. LOGISTICS",
             style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
@@ -27,7 +28,7 @@ pw.Widget buildDeliveryChallan(
         "Challan No: ${tripData?['xsornum']?.toString() ?? 'N/A'}",
         style: pw.TextStyle(fontSize: 14),
       ),
-      pw.Divider(thickness: 1),
+     pw.Divider(thickness: 1),
 
       // Vehicle & Driver Info
       pw.Row(
@@ -41,7 +42,7 @@ pw.Widget buildDeliveryChallan(
                 style: pw.TextStyle(fontSize: 12),
               ),
               pw.Text(
-                "Vehicle Reg No: ${tripData?['xvmregno']?.toString() ?? 'N/A'}",
+                "Vehicle Regn No: ${tripData?['xvmregno']?.toString() ?? 'N/A'}",
                 style: pw.TextStyle(fontSize: 12),
               ),
               pw.Text(
@@ -141,13 +142,13 @@ pw.Widget buildDeliveryChallan(
         )
       ),
 
-      pw.SizedBox(height: 10),
+      pw.SizedBox(height: 5),
 
       // Signature & Time
       pw.Text("Signature: "),
-      pw.SizedBox(height: 10),
+      pw.SizedBox(height: 9),
       pw.Text("Date & Time: "),
-      pw.SizedBox(height: 15),
+      pw.SizedBox(height: 11),
 
       // Footer Note
       pw.Center(
@@ -156,7 +157,7 @@ pw.Widget buildDeliveryChallan(
           style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic),
         ),
       ),
-      pw.SizedBox(height: 10),
+      pw.SizedBox(height: 28),
     ],
   );
 }

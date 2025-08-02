@@ -1,44 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart';
-
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:tk_logistics/common/widgets/custom_indicator.dart';
 import 'package:tk_logistics/common/widgets/custom_outlined_button.dart';
-import 'package:tk_logistics/features/screens/home/create_trip/3ms/controller/threems_controller.dart';
-import 'package:tk_logistics/features/screens/home/create_trip/tms/controller/tms_controller.dart';
-import 'package:tk_logistics/features/screens/home/home_screen.dart';
-import 'package:tk_logistics/routes/routes_name.dart';
+import 'package:tk_logistics/common/widgets/custom_textfield.dart';
+import 'package:tk_logistics/features/screens/home/create_trip/rental/controller/rental_controller.dart';
+import 'package:tk_logistics/util/dimensions.dart';
+import 'package:tk_logistics/util/styles.dart';
 
 import '../../../../../../common/widgets/custom_button.dart';
+import '../../../../../../common/widgets/custom_indicator.dart';
 import '../../../../../../common/widgets/loading_cntroller.dart';
 import '../../../../../../util/app_color.dart';
-import '../../../../../../util/dimensions.dart';
-import '../../../../../../util/styles.dart';
 import '../../../../../auth/login/controller/user_controller.dart';
 
-class TmsTrip extends StatelessWidget {
+
+class RentalTrip extends StatelessWidget {
   final userController = Get.find<UserController>();
-  final TmsController tmsController = Get.put(TmsController());
-  //final FilePickerController fileController = Get.put(FilePickerController());
+  final RentalController Controller = Get.put(RentalController());
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final loadingController = Get.find<LoadingController>();
 
-  ///  Add GlobalKey for Form State
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: tmsController.selectedDate.value,
+      initialDate: Controller.selectedDate.value,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
     if (picked != null) {
-      tmsController.pickDate(picked); // Ensure only date is stored
+      Controller.pickDate(picked); // Save only the date
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -48,81 +43,60 @@ class TmsTrip extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: Form(
-            key: _formKey, //  Wrap in Form widget
-            child: GetBuilder<TmsController>(
+            key: _formKey,
+            child: GetBuilder<RentalController>(
               initState: (_) {
-                tmsController.fetchLocations();
-                tmsController.fetchVehicleNumbers();
-                tmsController.fetchBillingUnits();
-                tmsController.fetchCargoType();
-                tmsController.fetchTypeofTrip();
-                // tmsController.fetchSegment();
-                if (tmsController.locations.isNotEmpty) {
-                  tmsController.from.value =
-                  (userController.user.value?.zone?.isNotEmpty ?? false)
+                Controller.fetchLocations();
+                Controller.fetchVehicleNumbers();
+                Controller.fetchBillingUnits();
+                //Controller.fetchSuppliers();
+                Controller.fetchCargoType();
+                Controller.fetchSegment();
+                if (Controller.locations.isNotEmpty) {
+                  Controller.from.value = (userController.user.value?.zone?.isNotEmpty ?? false)
                       ? userController.user.value?.zone
-                      : tmsController.locations.first;
-// Set first item as default
-                }
+                      : Controller.locations.first; // Set first item as default
+                }// ✅ Fetch locations when screen opens
               },
               builder: (controller) {
                 return Column(
                   children: [
-                    SizedBox(
-                      height: 5,
-                    ),
-
+                    SizedBox(height: 5,),
                     /// FROM - TO (Required)
                     Row(
                       children: [
-                        Expanded(
-                            child: buildSearchableDropdown(
-                                "From", controller.locations, controller.from,
-                                required: true, allowAdd: true)),
+                        Expanded(child: buildSearchableDropdown("From", Controller.locations, Controller.from, required: true,allowAdd: true)),
                         SizedBox(width: 10),
-                        Expanded(
-                            child: buildSearchableDropdown(
-                                "To", controller.locations, controller.to,
-                                required: true, allowAdd: true)),
+                        Expanded(child: buildSearchableDropdown("To", Controller.locations, Controller.to, required: true,allowAdd: true)),
                       ],
                     ),
-                    SizedBox(
-                      height: 5,
-                    ),
+                    SizedBox(height: 5,),
                     Row(
                       children: [
-                        Expanded(
-                            child: buildTextField(
-                              "Loading Points",
-                              controller.loadingPointController,
-                              isNumeric: true,
-                              isDefault: true,
-                            )),
-                        SizedBox(
-                          width: 10,
-                        ),
-                        Expanded(
-                            child: buildTextField(
-                              "Unloading Points",
-                              controller.unloadingPointController,
-                              isNumeric: true,
-                              isDefault: true,
-                            )),
+                        Expanded(child: buildTextField(
+                          "Loading Points", Controller.loadingPointController,
+                          isNumeric: true, isDefault: true,)),
+                        SizedBox(width: 10,),
+                        Expanded(child: buildTextField("Unloading Points",
+                          Controller.unloadingPointController,
+                          isNumeric: true, isDefault: true,)),
                       ],
                     ),
-
-                    /// VEHICLE NO & DRIVER INFO (Auto-generated)
+                    //SizedBox(height: 5,),
+                    /*buildSearchableDropdown(
+                        "Pick Vendor", controller.pickSuppliers,
+                        controller.pickSupplier,allowAdd: true,required: true),*/
                     Row(children: [
                       Expanded(
                         child: buildSearchableDropdown(
                           "Vehicle Code",
                           required: true,
                           allowAdd: false,
-                          controller.vehicleID,
-                          controller.selectedVehicle,
+                          Controller.vehicleID,
+                          Controller.selectedVehicle,
                           // Bind selected vehicle
                           onSelected: (selectedValue) {
-                            controller.onVehicleSelected(selectedValue);
+                            Controller.onVehicleSelected(selectedValue);
                             spinkit;
                             // Trigger selection
                           },
@@ -134,8 +108,8 @@ class TmsTrip extends StatelessWidget {
                       Expanded(
                           child: buildReadOnlyField(
                               "Vehicle Regn No.",
-                              controller.selectedVehicleNumbers,
-                              controller.vehicleNumberController)),
+                              Controller.selectedVehicleNumbers,
+                              Controller.vehicleNumberController)),
                     ]),
                     Row(
                       children: [
@@ -154,29 +128,15 @@ class TmsTrip extends StatelessWidget {
                                 controller.driverPhoneController)),
                       ],
                     ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    buildSearchableDropdown(
-                      "Type of Trip",
-                      controller.tripTypes,
-                      controller.tripType,
-                      required: true,
-                      allowAdd: false,
-                    ),
-                    SizedBox(height: 10),
-
+                    buildReadOnlyField("Vendor", Controller.selectedVendorName, Controller.vendorNameController),
+                    SizedBox(height: 5,),
                     /// CUSTOMER (Required)
                     buildSearchableDropdown(
-                      "Billing Unit",
-                      controller.billingUnits,
-                      controller.billingUnit,
-                      required: true,
-                      allowAdd: false,
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
+                        "Billing Unit", Controller.billingUnits, Controller.billingUnit,
+                        required: true,allowAdd: false),
+
+                    SizedBox(height: 10,),
+
 
                     /// DATE (Auto-generated)
                     Row(
@@ -192,25 +152,21 @@ class TmsTrip extends StatelessWidget {
                                 vertical: Dimensions.paddingSizeTwelve,
                               ),
                               decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: AppColor.green, width: 1.5),
+                                border: Border.all(color: AppColor.green, width: 1.5),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
-                                mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Obx(() =>
                                       Text(
-                                        tmsController.selectedDate.value == null
+                                        Controller.selectedDate.value == null
                                             ? "Pick a date to view trips"
                                             : DateFormat('yyyy-MM-dd').format(
-                                            tmsController
-                                                .selectedDate.value!),
+                                            Controller.selectedDate.value!),
                                         // Formats only date
                                         style: quicksandRegular.copyWith(
-                                            fontSize:
-                                            Dimensions.fontSizeFourteen),
+                                            fontSize: Dimensions.fontSizeFourteen),
                                       )),
                                   Icon(
                                     Icons.calendar_today_outlined,
@@ -221,53 +177,39 @@ class TmsTrip extends StatelessWidget {
                             ),
                           ),
                         ),
-                        SizedBox(
-                          width: 10,
-                        ),
+                        SizedBox(width: 10,),
                         Expanded(
                           child: buildTextField("Cargo Weight (MT)",
-                              controller.cargoWeightController,
+                              Controller.cargoWeightController,
                               required: true, isNumeric: true),
                         ),
                       ],
                     ),
 
-                    SizedBox(
-                      height: 5,
-                    ),
+                    SizedBox(height: 5,),
 
                     /// Cargo Weight (Required, Numeric)
                     //SizedBox(width: 10),
                     buildMultiSelectDropdown(
                       "Product Type", // Label for the dropdown
-                      controller.cargoTypes,
-                      // List of cargo types (RxList<String>)
-                      controller.cargoType,
-                      // Selected cargo types (RxList<String>)
+                      Controller.cargoTypes, // List of cargo types (RxList<String>)
+                      Controller.cargoType, // Selected cargo types (RxList<String>)
                       required: false, // You can make it required if needed
                       onSelected: (selectedItems) {
                         // Handle the selected items, if necessary
                         print("Selected cargo types: $selectedItems");
                       },
-                      allowAdd:
-                      true, // If you want to allow adding new items, set to true
+                      allowAdd: true, // If you want to allow adding new items, set to true
                     ),
-                    //buildReadOnlyField("Challan", controller.challanText, controller.challanController),
 
-                    SizedBox(
-                      height: 5,
-                    ),
+                    // buildReadOnlyField("Challan", controller.challan.value),
+
+                    SizedBox(height: 5,),
                     Row(
                       children: [
-                        Expanded(
-                            child: buildTextField(
-                                "Distance (KM)", controller.distanceController,
-                                isNumeric: true, required: true)),
+                        Expanded(child: buildTextField("Distance (KM)", Controller.distanceController,isNumeric: true,required: true)),
                         SizedBox(width: 10),
-                        Expanded(
-                            child: buildTextField("Service Charge (BDT)",
-                                controller.serviceChargeController,
-                                isNumeric: true)),
+                        Expanded(child: buildTextField("Service Charge (BDT)", Controller.serviceChargeController, isNumeric: true)),
                       ],
                     ),
 
@@ -277,8 +219,8 @@ class TmsTrip extends StatelessWidget {
                         Expanded(
                           child: buildDateTimeField(
                             "Pickup Time",
-                            controller.pickupDate,
-                            controller: controller.pickupDateController,
+                            Controller.pickupDate,
+                            controller: Controller.pickupDateController,
                             required: true,
                           ),
                         ),
@@ -286,31 +228,22 @@ class TmsTrip extends StatelessWidget {
                         Expanded(
                           child: buildDateTimeField(
                             "Est. Drop-off Time",
-                            controller.dropOffDate,
-                            controller: controller.dropOffDateController,
+                            Controller.dropOffDate,
+                            controller: Controller.dropOffDateController,
 
                             required: true,
                           ),
                         ),
                       ],
                     ),
-                    // SizedBox(height: 5,),
 
-                    /*buildSearchableDropdown("Segment",
-                      controller.segments, controller.segment,
-                      required: false, allowAdd: false,),*/
-                    SizedBox(
-                      height: 5,
-                    ),
-                    buildTextField("Special Note", controller.noteController,
-                        isLabel: true),
-                    SizedBox(
-                      height: 10,
-                    ),
+                    /// Segment (Required)
+                    //buildSearchableDropdown("Segment", controller.segments, controller.segment, required: false,allowAdd: false),
+                    buildTextField("Special Note", Controller.noteController, isLabel: true),
+                    SizedBox(height: 10,),
 
                     /// Submit Button
-                    Obx(() =>
-                    loadingController.isCreatingTrip.value
+                    Obx(() => loadingController.isCreatingTrip.value
                         ? spinkit
                         : CustomButton(
                       text: "Create Trip",
@@ -323,57 +256,57 @@ class TmsTrip extends StatelessWidget {
                           Get.dialog(
                             AlertDialog(
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
+                                borderRadius: BorderRadius.circular(30), // Rounded corners for dialog
                               ),
                               backgroundColor: AppColor.mintGreenBG,
-                              title: Text("Confirm",
-                                  style: quicksandBold.copyWith(
-                                      fontSize: Dimensions.fontSizeTwenty,
-                                      color: AppColor.neviBlue)),
-                              content: Text(
-                                  "Are you sure you want to create this trip?",
-                                  style: quicksandSemibold.copyWith(
-                                      fontSize: Dimensions.fontSizeSixteen)),
+                              title: Text("Confirm",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeTwenty,color: AppColor.neviBlue)),
+                              content: Text("Are you sure you want to create this trip?",style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeSixteen)),
                               actions: [
+                                // No button
                                 TextButton(
                                   onPressed: () {
                                     Get.back(); // Close the dialog
                                   },
-                                  child: Text("No",
-                                      style: quicksandBold.copyWith(
-                                          fontSize: Dimensions.fontSizeFourteen,
-                                          color: AppColor.primaryRed)),
+                                  child: Text("No",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen,color: AppColor.primaryRed)),
                                 ),
+                                // Yes button
                                 TextButton(
                                   onPressed: () async {
                                     Get.back(); // Close the dialog
 
+                                    // Run with loader and create the trip
                                     await loadingController.runWithLoader(
                                       loader: loadingController.isCreatingTrip,
                                       action: () async {
-                                        await controller.createTrip();  // Just await it
+                                        await Controller.createTrip();  // Just await it
 
                                         _formKey.currentState?.reset();     // Reset form validation
-                                        controller.clearFormFields();
-                                        controller.refreshFormUI();// Clear input fields
+                                        Controller.clearFormFields();
+                                        Controller.refreshFormUI();// Clear input fields
                                       },
                                     );
                                   },
-                                  child: Text(
-                                    "Yes",
-                                    style: quicksandBold.copyWith(
-                                      fontSize: Dimensions.fontSizeFourteen,
-                                      color: AppColor.persianGreen,
-                                    ),
-                                  ),
+                                  child: Text("Yes",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen,color: AppColor.persianGreen)),
                                 ),
                               ],
                             ),
                           );
                         }
                       },
-                    ),
-                    )
+                    )),
+                   /* Obx(() {
+                      return Expanded(
+                        child: CustomOutlinedButton(
+                          text: "Quotation",
+                          color: AppColor.neviBlue,
+                          disableColor: Colors.grey, // 🟡 Set disabled color
+                          isEnabled: tripController.isTripCreated.value, // 🔹 Control enable/disable state
+                          onTap: tripController.isTripCreated.value ? () {
+                            Get.toNamed("QuotationScreen");
+                          } : null,
+                        ),
+                      );
+                    }),*/
                   ],
                 );
               },
@@ -459,35 +392,63 @@ class TmsTrip extends StatelessWidget {
             return null;
           },
           onTap: () async {
-            await tmsController.pickDateTime(date);
+            await Controller.pickDateTime(date);
           },
         );
       }),
     );
   }
 
-  Widget buildSearchableDropdown(String label, List<String> items,
-      RxnString selectedValue,
-      {bool required = false,
-        String? defaultValue,
-        Function(String)? onSelected,
-        bool allowAdd = false}) {
-    // allowAdd default to false
+  Widget buildReadOnlyField(String label, RxString value,
+      TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Obx(() {
+        // If value is empty, set a default value without changing RxString state
+        String emptyValue = "N/A";
+        controller.text = value.value.isEmpty ? emptyValue : value.value;
+
+        return TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelStyle: quicksandRegular.copyWith(
+                fontSize: Dimensions.fontSizeFourteen),
+            labelText: label,
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(width: 1.5, color: AppColor.green),
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          readOnly: true,
+          style: quicksandSemibold.copyWith(
+            fontSize: Dimensions.fontSizeFourteen, // Ensure text is not bold
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget buildSearchableDropdown(
+      String label, List<String> items, RxnString selectedValue,
+      {bool required = false, String? defaultValue, Function(String)? onSelected, bool allowAdd = false}) { // allowAdd default to false
     return Obx(() {
       if (selectedValue.value == null && defaultValue != null) {
         selectedValue.value = defaultValue;
       }
 
-      TextEditingController controller =
-      TextEditingController(text: selectedValue.value ?? "");
+      TextEditingController controller = TextEditingController(
+          text: selectedValue.value ?? "");
 
       return TextFormField(
         controller: controller,
         readOnly: true,
         style: quicksandSemibold.copyWith(
-          fontSize: Dimensions.fontSizeFourteen, // Ensure text is not bold
-        ),
-        // Prevent manual typing
+          fontSize: Dimensions.fontSizeFourteen,// Ensure text is not bold
+        ),// Prevent manual typing
         onTap: () {
           showSearchDialog(
             label,
@@ -500,21 +461,18 @@ class TmsTrip extends StatelessWidget {
         },
         decoration: InputDecoration(
           errorText: null,
-          errorStyle:
-          quicksandRegular.copyWith(fontSize: Dimensions.fontSizeTen),
+          errorStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeTen),
           labelText: label,
           labelStyle: quicksandRegular.copyWith(
             fontSize: Dimensions.fontSizeFourteen,
-            color: (required &&
-                (selectedValue.value == null || selectedValue.value!.isEmpty))
+            color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
                 ? AppColor.primaryRed
                 : AppColor.black, // or any color you want for filled state
           ),
           focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(
               width: 1.5,
-              color: (required &&
-                  (selectedValue.value == null || selectedValue.value!.isEmpty))
+              color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
                   ? AppColor.primaryRed
                   : AppColor.neviBlue,
             ),
@@ -523,8 +481,7 @@ class TmsTrip extends StatelessWidget {
           enabledBorder: OutlineInputBorder(
             borderSide: BorderSide(
               width: 1.5,
-              color: (required &&
-                  (selectedValue.value == null || selectedValue.value!.isEmpty))
+              color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
                   ? AppColor.primaryRed
                   : AppColor.neviBlue,
             ),
@@ -541,22 +498,19 @@ class TmsTrip extends StatelessWidget {
           contentPadding: EdgeInsets.symmetric(
               horizontal: Dimensions.paddingSizeTwelve,
               vertical: Dimensions.paddingSizeFourteen),
-          suffixIcon: Icon(Icons.arrow_drop_down,
-              color: AppColor.green), // Dropdown icon
+          suffixIcon:
+          Icon(Icons.arrow_drop_down, color: AppColor.green), // Dropdown icon
         ),
         validator: required
-            ? (value) {
-          if (value == null || value.isEmpty) {
-            return 'This field is required'; // Error message when the field is empty
-          }
-          return null; // No error
-        }
+            ? (value) =>
+        (value == null || value.isEmpty) ? "Please select $label" : null
             : null,
       );
     });
   }
 
-  void showSearchDialog(String label,
+  void showSearchDialog(
+      String label,
       List<String> items,
       RxnString selectedValue,
       TextEditingController controller,
@@ -605,44 +559,41 @@ class TmsTrip extends StatelessWidget {
                       .toList();
 
                   // Show "Add" button only if allowed and item is new
-                  isNewItem.value = allowAdd &&
-                      query.isNotEmpty &&
-                      !items.contains(query.trim());
+                  isNewItem.value =
+                      allowAdd && query.isNotEmpty && !items.contains(query.trim());
                 },
               ),
               SizedBox(height: 10),
 
               // 📋 Search Result List
-              Obx(() =>
-                  Container(
-                    height: 200,
-                    child: filteredItems.isNotEmpty
-                        ? ListView.separated(
-                      itemCount: filteredItems.length,
-                      separatorBuilder: (_, __) => Divider(),
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          title: Text(
-                            filteredItems[index],
-                            style: quicksandRegular.copyWith(
-                                fontSize: Dimensions.fontSizeFourteen,
-                                color: AppColor.neviBlue),
-                          ),
-                          onTap: () {
-                            selectedValue.value = filteredItems[index];
-                            if (onSelected != null) {
-                              onSelected(filteredItems[index]);
-                            }
-                            Get.back();
-                          },
-                        );
+              Obx(() => Container(
+                height: 200,
+                child: filteredItems.isNotEmpty
+                    ? ListView.separated(
+                  itemCount: filteredItems.length,
+                  separatorBuilder: (_, __) => Divider(),
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(
+                        filteredItems[index],
+                        style: quicksandRegular.copyWith(
+                            fontSize: Dimensions.fontSizeFourteen,
+                            color: AppColor.neviBlue),
+                      ),
+                      onTap: () {
+                        selectedValue.value = filteredItems[index];
+                        if (onSelected != null) {
+                          onSelected(filteredItems[index]);
+                        }
+                        Get.back();
                       },
-                    )
-                        : Center(child: Text("No matches found")),
-                  )),
+                    );
+                  },
+                )
+                    : Center(child: Text("No matches found")),
+              )),
 
-              Obx(() =>
-              isNewItem.value
+              Obx(() => isNewItem.value
                   ? ElevatedButton.icon(
                 onPressed: () {
                   String newItem = searchController.text;
@@ -656,12 +607,7 @@ class TmsTrip extends StatelessWidget {
                   }
                 },
                 icon: Icon(Icons.add, color: AppColor.white),
-                label: Text(
-                  "Add",
-                  style: quicksandBold.copyWith(
-                      fontSize: Dimensions.fontSizeFourteen,
-                      color: AppColor.white),
-                ),
+                label: Text("Add",style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen,color: AppColor.white),),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColor.neviBlue,
                   shape: RoundedRectangleBorder(
@@ -670,9 +616,7 @@ class TmsTrip extends StatelessWidget {
               )
                   : SizedBox()),
 
-              SizedBox(
-                height: 10,
-              ),
+              SizedBox(height: 10,),
 
               CustomButton(
                   onTap: () => Get.back(),
@@ -685,31 +629,29 @@ class TmsTrip extends StatelessWidget {
     );
   }
 
-  Widget buildMultiSelectDropdown(String label,
-      RxList<String> items, // Available options
-      RxList<String> selectedValues, // Selected values
-          {bool required = false,
-        Function(List<String>)? onSelected,
-        bool allowAdd = false}) {
+  Widget buildMultiSelectDropdown(
+      String label,
+      RxList<String> items,  // Available options
+      RxList<String> selectedValues,  // Selected values
+          {bool required = false, Function(List<String>)? onSelected, bool allowAdd = false}
+      ) {
     return Obx(() {
       TextEditingController controller = TextEditingController(
-          text: selectedValues.isNotEmpty ? selectedValues.join(", ") : "");
+          text: selectedValues.isNotEmpty ? selectedValues.join(", ") : ""
+      );
 
       return TextFormField(
         minLines: 1,
         maxLines: null,
         controller: controller,
         readOnly: true,
-        style:
-        quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeFourteen),
+        style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeFourteen),
         onTap: () {
-          showMultiSelectDialog(
-              label, items, selectedValues, controller, onSelected, allowAdd);
+          showMultiSelectDialog(label, items, selectedValues, controller, onSelected, allowAdd);
         },
         decoration: InputDecoration(
           labelText: label,
-          labelStyle:
-          quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen),
+          labelStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen),
           focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
             borderRadius: BorderRadius.circular(12),
@@ -720,27 +662,29 @@ class TmsTrip extends StatelessWidget {
           ),
           contentPadding: EdgeInsets.symmetric(
               horizontal: Dimensions.paddingSizeTwelve,
-              vertical: Dimensions.paddingSizeFourteen),
+              vertical: Dimensions.paddingSizeFourteen
+          ),
           suffixIcon: Icon(Icons.arrow_drop_down, color: AppColor.green),
         ),
         validator: required
-            ? (value) =>
-        (value == null || value.isEmpty) ? "Please select $label" : null
+            ? (value) => (value == null || value.isEmpty) ? "Please select $label" : null
             : null,
       );
     });
   }
 
-  void showMultiSelectDialog(String label,
-      RxList<String> items, // Available items
-      RxList<String> selectedValues, // Selected values
+
+
+  void showMultiSelectDialog(
+      String label,
+      RxList<String> items,  // Available items
+      RxList<String> selectedValues,  // Selected values
       TextEditingController controller,
       Function(List<String>)? onSelected,
-      bool allowAdd) {
+      bool allowAdd
+      ) {
     TextEditingController searchController = TextEditingController();
-    RxList<String> filteredItems = items
-        .toList()
-        .obs;
+    RxList<String> filteredItems = items.toList().obs;
     RxBool isNewItem = false.obs;
 
     Get.dialog(
@@ -751,10 +695,7 @@ class TmsTrip extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("Select $label",
-                  style: quicksandBold.copyWith(
-                      fontSize: Dimensions.fontSizeEighteen,
-                      color: AppColor.neviBlue)),
+              Text("Select $label", style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeEighteen, color: AppColor.neviBlue)),
               SizedBox(height: 10),
 
               // Search Field
@@ -763,68 +704,54 @@ class TmsTrip extends StatelessWidget {
                 decoration: InputDecoration(
                   prefixIcon: Icon(Icons.search, color: AppColor.neviBlue),
                   hintText: allowAdd ? "Search or add..." : "Search...",
-                  hintStyle: quicksandSemibold.copyWith(
-                      fontSize: Dimensions.fontSizeSixteen,
-                      color: AppColor.neviBlue),
+                  hintStyle: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeSixteen, color: AppColor.neviBlue),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(width: 1.5, color: AppColor.green),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderSide:
-                    BorderSide(width: 1.5, color: AppColor.neviBlue),
+                    borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 onChanged: (query) {
                   filteredItems.value = items
-                      .where((item) =>
-                      item.toLowerCase().contains(query.toLowerCase()))
+                      .where((item) => item.toLowerCase().contains(query.toLowerCase()))
                       .toList();
 
-                  isNewItem.value = allowAdd &&
-                      query.isNotEmpty &&
-                      !items.contains(query.trim());
+                  isNewItem.value = allowAdd && query.isNotEmpty && !items.contains(query.trim());
                 },
               ),
               SizedBox(height: 10),
 
               // List of Items with Checkboxes
-              Obx(() =>
-                  Container(
-                    height: 200,
-                    child: filteredItems.isNotEmpty
-                        ? ListView.separated(
-                      itemCount: filteredItems.length,
-                      separatorBuilder: (_, __) => Divider(),
-                      itemBuilder: (context, index) {
-                        String currentItem = filteredItems[index];
-                        return Obx(() =>
-                            CheckboxListTile(
-                              title: Text(currentItem,
-                                  style: quicksandRegular.copyWith(
-                                      fontSize:
-                                      Dimensions.fontSizeFourteen,
-                                      color: AppColor.neviBlue)),
-                              value: selectedValues.contains(currentItem),
-                              onChanged: (bool? isChecked) {
-                                if (isChecked == true) {
-                                  selectedValues.add(currentItem);
-                                } else {
-                                  selectedValues.remove(currentItem);
-                                }
-                                controller.text =
-                                    selectedValues.join(", ");
-                              },
-                            ));
+              Obx(() => Container(
+                height: 200,
+                child: filteredItems.isNotEmpty
+                    ? ListView.separated(
+                  itemCount: filteredItems.length,
+                  separatorBuilder: (_, __) => Divider(),
+                  itemBuilder: (context, index) {
+                    String currentItem = filteredItems[index];
+                    return Obx(() => CheckboxListTile(
+                      title: Text(currentItem, style: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen, color: AppColor.neviBlue)),
+                      value: selectedValues.contains(currentItem),
+                      onChanged: (bool? isChecked) {
+                        if (isChecked == true) {
+                          selectedValues.add(currentItem);
+                        } else {
+                          selectedValues.remove(currentItem);
+                        }
+                        controller.text = selectedValues.join(", ");
                       },
-                    )
-                        : Center(child: Text("No matches found")),
-                  )),
+                    ));
+                  },
+                )
+                    : Center(child: Text("No matches found")),
+              )),
 
               // Add Button (if new item doesn't exist)
-              Obx(() =>
-              isNewItem.value
+              Obx(() => isNewItem.value
                   ? ElevatedButton.icon(
                 onPressed: () {
                   String newItem = searchController.text.trim();
@@ -839,21 +766,16 @@ class TmsTrip extends StatelessWidget {
                   }
                 },
                 icon: Icon(Icons.add, color: AppColor.white),
-                label: Text("Add",
-                    style: quicksandBold.copyWith(
-                        fontSize: Dimensions.fontSizeFourteen,
-                        color: AppColor.white)),
+                label: Text("Add", style: quicksandBold.copyWith(fontSize: Dimensions.fontSizeFourteen, color: AppColor.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColor.neviBlue,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               )
                   : SizedBox()),
 
               SizedBox(height: 10),
 
-              // Close Button
               CustomButton(
                   onTap: () => Get.back(),
                   text: "OK",
@@ -865,42 +787,10 @@ class TmsTrip extends StatelessWidget {
     );
   }
 
-  /// 🔹 Read-Only Text Field (No Validation)
-  Widget buildReadOnlyField(String label, RxString value,
-      TextEditingController controller) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Obx(() {
-        // If value is empty, set a default value without changing RxString state
-        String emptyValue = "N/A";
-        controller.text = value.value.isEmpty ? emptyValue : value.value;
-
-        return TextFormField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelStyle: quicksandRegular.copyWith(
-                fontSize: Dimensions.fontSizeFourteen),
-            labelText: label,
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(width: 1.5, color: AppColor.neviBlue),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(width: 1.5, color: AppColor.green),
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          readOnly: true,
-          style: quicksandSemibold.copyWith(
-            fontSize: Dimensions.fontSizeFourteen, // Ensure text is not bold
-          ),
-        );
-      }),
-    );
-  }
 
   /// 🔹 Standard Text Field with Validation
-  Widget buildTextField(String label,
+  Widget buildTextField(
+      String label,
       TextEditingController controller, {
         bool required = false,
         bool isNumeric = false,
@@ -922,33 +812,25 @@ class TmsTrip extends StatelessWidget {
             maxLines: isLabel ? 2 : null,
             decoration: InputDecoration(
               errorText: null,
-              errorStyle: quicksandRegular.copyWith(
-                  fontSize: Dimensions.fontSizeTen),
+              errorStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeTen),
               hintText: isLabel ? "Cannot exceed more than 250 words" : null,
-              hintStyle: quicksandRegular.copyWith(
-                  fontSize: Dimensions.fontSizeFourteen),
+              hintStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeFourteen),
               labelStyle: quicksandRegular.copyWith(
                 fontSize: Dimensions.fontSizeFourteen,
-                color: (required && isFieldEmpty)
-                    ? AppColor.primaryRed
-                    : AppColor.black,
+                color: (required && isFieldEmpty) ? AppColor.primaryRed : AppColor.black,
               ),
               labelText: label,
               focusedBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   width: 1.5,
-                  color: (required && isFieldEmpty)
-                      ? AppColor.primaryRed
-                      : AppColor.neviBlue,
+                  color: (required && isFieldEmpty) ? AppColor.primaryRed : AppColor.neviBlue,
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(
                   width: 1.5,
-                  color: (required && isFieldEmpty)
-                      ? AppColor.primaryRed
-                      : AppColor.green,
+                  color: (required && isFieldEmpty) ? AppColor.primaryRed : AppColor.green,
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -963,17 +845,14 @@ class TmsTrip extends StatelessWidget {
             ),
             controller: controller,
             keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
-            inputFormatters: isDefault ? [
-              FilteringTextInputFormatter.digitsOnly
-            ] : [],
+            inputFormatters: isDefault ? [FilteringTextInputFormatter.digitsOnly] : [],
             style: quicksandSemibold.copyWith(
               fontSize: Dimensions.fontSizeFourteen,
             ),
             onChanged: (value) {
               if (isDefault && value.isEmpty) {
                 controller.text = "";
-                controller.selection = TextSelection.fromPosition(
-                    TextPosition(offset: controller.text.length));
+                controller.selection = TextSelection.fromPosition(TextPosition(offset: controller.text.length));
               }
             },
             validator: required

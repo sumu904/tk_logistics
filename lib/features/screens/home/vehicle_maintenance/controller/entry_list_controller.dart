@@ -164,18 +164,22 @@ class EntryListController extends GetxController {
 
     }).toList();
 
-    filteredEntries.value = filtered.map((item) {
+    filteredEntries.value = filtered.map((entry) {
       return {
-        "Date": item["xdate"] ?? "",
-        "Vehicle Code": item["vehicle_code"] ?? "",
-        "Vehicle Number": item["vehicle_number"] ?? "",
-        "Driver Name": item["driver_name"] ?? "",
-        "Workshop Type": item["workshop_type"] ?? "",
-        "Workshop Name": item["workshop_name"] ?? "",
-        "Total Cost": item["total_cost"] ?? "0.00",
-        "Maintenance No": item["maintenance_no"] ?? "",
-        "Maintenance Type": item["maintenance_type"] ?? "N/A",
-        "Cost": item["cost"] ?? item["total_cost"] ?? "0.00",
+        "xmaintenanceid": entry["maintenance_no"], // Use the correct key
+        "Date": entry["xdate"] ?? "",
+        "InTime": entry["xintime"] ?? "",
+        "Estimated Out Time": entry["xlotime"] ?? "",
+        "Actual Out Time": entry["xouttime"] ?? "",
+        "Vehicle Code": entry["vehicle_code"] ?? "",
+        "Vehicle Number": entry["vehicle_number"] ?? "",
+        "Driver Name": entry["driver_name"] ?? "",
+        "Workshop Type": entry["workshop_type"] ?? "",
+        "Workshop Name": entry["workshop_name"] ?? "",
+        "Total Cost": entry["total_cost"] ?? "0.00",
+        "Maintenance No": entry["maintenance_no"] ?? "",
+        "Maintenance Type": entry["maintenance_type"] ?? "N/A",
+        "Cost": entry["cost"] ?? entry["total_cost"] ?? "0.00",
       };
     }).toList();
 

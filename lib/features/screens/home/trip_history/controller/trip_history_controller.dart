@@ -12,12 +12,13 @@ class TripHistoryController extends GetxController {
   final DateFormat formatter = DateFormat('yyyy-MM-dd'); // Format date
   var filteredTrips = <Trip>[].obs;
   var selectedOption = 'TMS'.obs; // Default value
-  var zemail =  ''.obs;
+  var zemail = ''.obs;
 
   @override
   void onInit() {
     super.onInit();
-    zemail.value = userController.user.value?.username ?? ''; // Assign inside onInit
+    zemail.value =
+        userController.user.value?.username ?? ''; // Assign inside onInit
   }
 
   void changeOption(String value) {
@@ -35,7 +36,6 @@ class TripHistoryController extends GetxController {
     try {
       // Format the date as 'yyyy-MM-dd', then append 'T00:00:00' for time
       String formattedDate = formatter.format(selectedDate.value) + 'T00:00:00';
-
 
       final response = await http.get(
         Uri.parse('${baseUrl}/Trip_list').replace(
@@ -65,7 +65,9 @@ class TripHistoryController extends GetxController {
 
           if (data is List) {
             // Directly assign fetched data to allTrips
-            var allTrips = data.map((tripJson) => Trip.fromJson(tripJson)).toList();
+            var allTrips = data
+                .map((tripJson) => Trip.fromJson(tripJson, tripType: selectedOption.value))
+                .toList();
             print("Fetched trip data: $allTrips");
 
             // Filter the trips based on the selected date
@@ -86,7 +88,8 @@ class TripHistoryController extends GetxController {
 
   // Function to filter trips based on the selected date
   void filterTrips(List<Trip> allTrips) {
-    String selected = formatter.format(selectedDate.value); // Format selected date to 'yyyy-MM-dd'
+    String selected = formatter
+        .format(selectedDate.value); // Format selected date to 'yyyy-MM-dd'
 
     // Filter trips by comparing the formatted trip date with the selected date
     filteredTrips.value = allTrips.where((trip) {
@@ -95,8 +98,6 @@ class TripHistoryController extends GetxController {
       return tripDate == selected; // Compare only the date part
     }).toList();
   }
-
-
 }
 
 class Trip {
@@ -105,10 +106,12 @@ class Trip {
   final String vehicleNo;
   final String driverName;
   final String driverPhone;
-  final String ? pickVendor;
+  final String? pickVendor;
   final String date;
   final String from;
   final String to;
+  final String pickupTime;
+  final String dropOffTime;
   final String billingUnit;
   final String status;
   final String email;
@@ -124,6 +127,8 @@ class Trip {
     required this.date,
     required this.from,
     required this.to,
+    required this.pickupTime,
+    required this.dropOffTime,
     required this.billingUnit,
     required this.status,
     required this.email,
@@ -139,30 +144,44 @@ class Trip {
       "xvmregno": vehicleNo,
       "xdriver": driverName,
       "xmobile": driverPhone,
-      "xsup":pickVendor,
+      "xsup": pickVendor,
       "xdate": date,
       "xsdestin": from,
       "xdestin": to,
+      "xouttime": pickupTime,
+      "xchallantime": dropOffTime,
       "xproj": billingUnit,
       "xstatusmove": status,
       "zemail": email,
     };
   }
 
-
   // Convert Map<String, dynamic> to Trip object
   factory Trip.fromJson(Map<String, dynamic> json, {String tripType = '3MS'}) {
     print("Received tripType: $tripType");
+
+    String customDateTime(String? input) {
+      try {
+        final dt = DateTime.parse(input ?? '');
+        return '${DateFormat('yyyy-MM-dd').format(dt)} Time: ${DateFormat('hh:mm a').format(dt)}';
+      } catch (_) {
+        return 'Unknown';
+      }
+    }
+
     return Trip(
       tripNo: (json['xsornum'] ?? 'Unknown').toString(),
       vehicleID: (json['xvehicle'] ?? 'Unknown').toString(),
       vehicleNo: tripType == '3MS' ? (json['xvmregno'] ?? '').toString() : '',
       driverName: (json['xdriver'] ?? 'Unknown').toString(),
       driverPhone: (json['xmobile'] ?? 'Unknown').toString(),
-      pickVendor: tripType == '3MS' ? (json['xsup'] ?? 'Unknown').toString() : '',// Show vendor in 3MS only
+      pickVendor:
+      (tripType == '3MS' || tripType == 'RENTAL')  ? (json['xsup'] ?? 'Unknown').toString() : '',
       date: (json['xdate'] ?? 'Unknown').toString(),
       from: (json['xsdestin'] ?? 'Unknown').toString(),
       to: (json['xdestin'] ?? 'Unknown').toString(),
+      pickupTime: customDateTime(json['xouttime']),
+      dropOffTime: customDateTime(json['xchallantime']),
       billingUnit: (json['xproj'] ?? 'Unknown').toString(),
       status: (json['xstatusmove'] ?? 'Unknown').toString(),
       email: (json['zemail'] ?? 'Unknown').toString(),
@@ -170,9 +189,8 @@ class Trip {
     );
   }
 
-
   @override
   String toString() {
-    return 'Trip(tripNo: $tripNo, vehicleID: $vehicleID, date: $date, from: $from, to: $to, billingUnit: $billingUnit, status: $status)';
+    return 'Trip(tripNo: $tripNo, vehicleID: $vehicleID, date: $date, from: $from, to: $to,pickupTime: $pickupTime,dropOffTime:$dropOffTime, billingUnit: $billingUnit, status: $status)';
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../../../../../const/const_values.dart';
 import '../../../../../../util/app_color.dart';
 import 'package:http/http.dart' as http;
@@ -12,6 +13,7 @@ class ThreemsController extends GetxController {
   // Dropdown Selections
   RxList<String> locations = <String>[].obs;
   RxList<String> billingUnits = <String>[].obs;
+  RxList<String> vehicleSizes = <String>[].obs;
   RxList<String> cargoTypes = <String>[].obs;
   RxList<String> segments = <String>[].obs;
   RxList<String> pickSuppliers = <String>[].obs;
@@ -19,6 +21,7 @@ class ThreemsController extends GetxController {
   var from = RxnString();
   var to = RxnString();
   var billingUnit = RxnString();
+  var vehicleSize = RxnString();
   var pickSupplier = RxnString();
   RxList<String> cargoType = <String>[].obs;
   var tripType = RxnString();
@@ -33,6 +36,8 @@ class ThreemsController extends GetxController {
 
   Rx<DateTime?> pickupDate = Rx<DateTime?>(null);
   Rx<DateTime?> dropOffDate = Rx<DateTime?>(null);
+  late TextEditingController pickupDateController;
+  late TextEditingController dropOffDateController;
 
   // Text Controllers
   TextEditingController loadingPointController = TextEditingController();
@@ -56,10 +61,25 @@ class ThreemsController extends GetxController {
     super.onInit();
     fetchLocations();
     //fetchVehicleNumbers();
+    fetchVehicleSizes();
     fetchBillingUnits();
     fetchSuppliers();
     fetchCargoType();
     fetchSegment();
+    pickupDateController = TextEditingController();
+    dropOffDateController = TextEditingController();
+
+    ever(pickupDate, (DateTime? val) {
+      pickupDateController.text = val != null
+          ? DateFormat('yyyy-MM-dd HH:mm').format(val)
+          : '';
+    });
+
+    ever(dropOffDate, (DateTime? val) {
+      dropOffDateController.text = val != null
+          ? DateFormat('yyyy-MM-dd HH:mm').format(val)
+          : '';
+    });
   }
 
   Future<void> pickDateTime(Rx<DateTime?> selectedDate) async {
@@ -143,6 +163,39 @@ class ThreemsController extends GetxController {
     }
   }
 
+///Fetch vehicle size list from API
+  Future<void> fetchVehicleSizes() async {
+    String apiUrl = "${baseUrl}/dropdown_list?xtype=Vehicle_Size";
+    print("Fetching billing unit from: $apiUrl");
+
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+
+      print("Response Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}"); // Check API Response
+
+      if (response.statusCode == 200) {
+        try {
+          final data = json.decode(response.body);
+          print("Decoded JSON: $data"); // Ensure data is properly decoded
+
+          if (data.containsKey('results') && data['results'] is List) {
+            vehicleSizes.assignAll(List<String>.from(
+                data['results'].map((item) => item['xcode'].toString())));
+            print("Fetched Billing Units: $vehicleSizes"); // Check list before UI updates
+          } else {
+            print("Unexpected API Response Format: 'results' key not found or not a List");
+          }
+        } catch (jsonError) {
+          print("Error decoding JSON: $jsonError");
+        }
+      } else {
+        print("Failed to fetch vehicle size: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error fetching vehicle size: $e");
+    }
+  }
 
   /// Fetch billing unit list from API
 
@@ -294,6 +347,7 @@ class ThreemsController extends GetxController {
       "xulpoint":unloadingPointController.text,
       "xsup": pickSupplier.value,
       "xvehicle": vehicleNoController.text,
+      "xvhcat": vehicleSize.value,
       "xdriver": driverNameController.text,
       "xmobile": driverPhoneController.text,
       "xproj": billingUnit.value,
@@ -349,6 +403,41 @@ class ThreemsController extends GetxController {
     currentDateController.dispose();
     loadingPointController.dispose();
     unloadingPointController.dispose();
+    pickupDateController.dispose();
+    dropOffDateController.dispose();
     super.onClose();
+  }
+
+  void clearFormFields() {
+    // Clear TextEditingControllers
+    cargoWeightController.clear();
+    serviceChargeController.clear();
+    startTimeController.clear();
+    unloadingTimeController.clear();
+    pickSupplierController.clear();
+    distanceController.clear();
+    noteController.clear();
+    currentDateController.clear();
+    pickupDateController.clear();
+    dropOffDateController.clear();
+    vehicleNoController.clear();
+    driverNameController.clear();
+    driverPhoneController.clear();
+
+    // Clear dropdown/selectable Rx values
+    to.value = null;
+    pickSupplier.value = null;
+    vehicleSize.value = null;
+    tripType.value = null;
+    billingUnit.value = null;
+    cargoType.value = [];
+  }
+  void refreshFormUI() {
+    to.refresh();
+    pickSupplier.refresh();
+    vehicleSize.refresh();
+    tripType.refresh();
+    billingUnit.refresh();
+    // Any other observable field needing manual trigger
   }
 }

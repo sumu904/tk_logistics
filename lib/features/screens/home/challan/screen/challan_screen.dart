@@ -72,11 +72,11 @@ class ChallanScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text("Vehicle Code : ${trip?['xvehicle'] ?? 'N/A'}", style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeFourteen)),
-                        Text("Vehicle Number : ${trip?['xvmregno'] ?? 'N/A'}", style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeFourteen)),
+                        Text("Vehicle Regn No. : ${trip?['xvmregno'] ?? 'N/A'}", style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeFourteen)),
                       ],
                     )
                         : Text(
-                      "Vehicle Number: ${trip?['xvehicle'] ?? 'N/A'}",
+                      "Vehicle Regn No.: ${trip?['xvehicle'] ?? 'N/A'}",
                       style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeFourteen),
                     ),
                     Text("Driver Name: ${trip?['xdriver'] ?? 'N/A'}", style: quicksandSemibold.copyWith(fontSize: Dimensions.fontSizeFourteen)),

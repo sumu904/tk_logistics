@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tk_logistics/features/screens/home/vehicle_maintenance/controller/entry_list_controller.dart';
+import 'package:tk_logistics/features/screens/home/vehicle_maintenance/screen/update_maintenance_form.dart';
 
 import '../../../../../common/widgets/custom_button.dart';
 import '../../../../../common/widgets/custom_indicator.dart';
@@ -319,6 +320,7 @@ class EntryListScreen extends StatelessWidget {
         border: Border.all(width: 1, color: AppColor.neviBlue),
       ),
       child: DataTable(
+        showCheckboxColumn: false,
         columnSpacing: 10,
         headingRowColor:
         MaterialStateColor.resolveWith((states) => AppColor.neviBlue),
@@ -356,27 +358,49 @@ class EntryListScreen extends StatelessWidget {
         ],
         rows: [
           ...entries.map((entry) {
-            return DataRow(cells: [
-              DataCell(Text(entry["Date"] ?? "",
-                  style: quicksandRegular.copyWith(
-                      fontSize: Dimensions.fontSizeFourteen))),
-              DataCell(Align(
+            return DataRow(
+              onSelectChanged: (selected) async {
+                if (selected == true) {
+                  print("Navigating with entry: $entry");
+                  // Await navigation and get the refresh signal
+                  bool? needsRefresh = await Get.to(() => UpdateMaintenanceForm(entry: entry));
+
+                  // If the form returned true, refresh your list
+                  if (needsRefresh == true) {
+                    final controller = Get.find<EntryListController>();
+                    controller.filterEntries(); // or whatever your refresh method is called
+                  }
+                }
+              },
+              cells: [
+                DataCell(Text(entry["Date"] ?? "",
+                    style: quicksandRegular.copyWith(
+                        fontSize: Dimensions.fontSizeFourteen))),
+                DataCell(Align(
                   alignment: Alignment.center,
                   child: Text(entry["Vehicle Code"] ?? "",
                       style: quicksandRegular.copyWith(
-                          fontSize: Dimensions.fontSizeFourteen)))),
-              DataCell(Align(
+                          fontSize: Dimensions.fontSizeFourteen)),
+                )),
+                DataCell(Align(
                   alignment: Alignment.center,
-                  child: Text(entry["Workshop Type"] ?? "",textAlign: TextAlign.center,overflow: TextOverflow.ellipsis,maxLines: 2,
+                  child: Text(entry["Workshop Type"] ?? "",
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                       style: quicksandRegular.copyWith(
-                          fontSize: Dimensions.fontSizeFourteen)))),
-              DataCell(Align(alignment: Alignment.centerRight,
-                child: Text(entry["Cost"] ?? "",
-                    style: quicksandRegular.copyWith(
-                        fontSize: Dimensions.fontSizeFourteen)),
-              )),
-            ]);
+                          fontSize: Dimensions.fontSizeFourteen)),
+                )),
+                DataCell(Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(entry["Cost"] ?? "",
+                      style: quicksandRegular.copyWith(
+                          fontSize: Dimensions.fontSizeFourteen)),
+                )),
+              ],
+            );
           }).toList(),
+
 
           // 👇 Add total row
           DataRow(
@@ -400,3 +424,25 @@ class EntryListScreen extends StatelessWidget {
     );
   }
 }
+/*class DetailScreen extends StatelessWidget {
+  final Map<String, dynamic> entry;
+
+  const DetailScreen({super.key, required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Detail View')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(
+          'Date: ${entry["Date"]}\n'
+              'Vehicle Code: ${entry["Vehicle Code"]}\n'
+              'Workshop Type: ${entry["Workshop Type"]}\n'
+              'Cost: ${entry["Cost"]}',
+          style: const TextStyle(fontSize: 16),
+        ),
+      ),
+    );
+  }
+}*/

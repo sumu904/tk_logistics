@@ -1,6 +1,8 @@
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:pie_chart/pie_chart.dart';
 
 import '../../../../../../util/app_color.dart';
 import '../../../../../../util/dimensions.dart';
@@ -18,6 +20,7 @@ class BillingUnitReport extends StatefulWidget {
 class _BillingUnitReportState extends State<BillingUnitReport> {
   DateTime selectedDate = DateTime.now();
   List<BillingUnitReportModel> tmsData = [];
+  List<BillingUnitReportModel> rentalData = [];
   List<BillingUnitReportModel> tms3Data = [];
 
   @override
@@ -29,11 +32,14 @@ class _BillingUnitReportState extends State<BillingUnitReport> {
   Future<void> fetchReports() async {
     var date = "${selectedDate.toIso8601String().split('T')[0]} 00:00:00";
     print("Fetching reports for date: $date");
+
     List<BillingUnitReportModel> tms = await fetchReport(date, "TMS");
+    List<BillingUnitReportModel> rental = await fetchReport(date, "RENTAL");
     List<BillingUnitReportModel> tms3 = await fetchReport(date, "3MS");
 
     setState(() {
       tmsData = tms;
+      rentalData = rental;
       tms3Data = tms3;
     });
   }
@@ -48,31 +54,51 @@ class _BillingUnitReportState extends State<BillingUnitReport> {
     if (picked != null && picked != selectedDate) {
       setState(() {
         selectedDate = picked;
-        fetchReports(); // Fetch new data based on the selected date
+        fetchReports();
       });
     }
   }
 
-  // Function to calculate the total quantity
   int getTotalQty() {
-    return tmsData.fold(0, (sum, item) => sum + (item.xqty ?? 0)) +
-        tms3Data.fold(0, (sum, item) => sum + (item.xqty ?? 0));
+    final int tmsQty = tmsData.fold<int>(0, (sum, item) => sum + (item.xqty ?? 0));
+    final int rentalQty = rentalData.fold<int>(0, (sum, item) => sum + (item.xqty ?? 0));
+    final int tms3Qty = tms3Data.fold<int>(0, (sum, item) => sum + (item.xqty ?? 0));
+
+    return tmsQty + rentalQty + tms3Qty ;
   }
 
   @override
   Widget build(BuildContext context) {
-    // Calculate total quantity only after the data is fetched
     int totalQty = getTotalQty();
 
-    // Calculate percentages
     double tmsPercentage = totalQty > 0
-        ? (tmsData.fold(0, (sum, item) => sum + (item.xqty ?? 0)) / totalQty) *
-            100
+        ? (tmsData.fold(0, (sum, item) => sum + (item.xqty ?? 0)) / totalQty) * 100
+        : 0;
+    double rentalPercentage = totalQty > 0
+        ? (rentalData.fold(0, (sum, item) => sum + (item.xqty ?? 0)) / totalQty) * 100
         : 0;
     double tms3Percentage = totalQty > 0
-        ? (tms3Data.fold(0, (sum, item) => sum + (item.xqty ?? 0)) / totalQty) *
-            100
+        ? (tms3Data.fold(0, (sum, item) => sum + (item.xqty ?? 0)) / totalQty) * 100
         : 0;
+
+    // <---- Add pieDataMap and pieColors here
+
+    int tmsQty = tmsData.fold(0, (sum, item) => sum + (item.xqty ?? 0));
+    int rentalQty = rentalData.fold(0, (sum, item) => sum + (item.xqty ?? 0));
+    int tms3Qty = tms3Data.fold(0, (sum, item) => sum + (item.xqty ?? 0));
+
+    Map<String, double> pieDataMap = {
+      "TMS": tmsQty.toDouble(),
+      "RENTAL": rentalQty.toDouble(),
+      "3MS": tms3Qty.toDouble(),
+    };
+
+    List<Color> pieColors = [
+      AppColor.primaryRed,
+      AppColor.blueColor,
+      AppColor.green ,
+    ];
+
     return Scaffold(
       backgroundColor: AppColor.mintGreenBG,
       appBar: AppBar(
@@ -82,16 +108,14 @@ class _BillingUnitReportState extends State<BillingUnitReport> {
           onPressed: () {
             Get.back();
           },
-          icon: Icon(
-            Icons.arrow_back_ios,
-            size: 22,
-            color: AppColor.white,
-          ),
+          icon: Icon(Icons.arrow_back_ios, size: 22, color: AppColor.white),
         ),
         title: Text(
           "Unit Wise Bill Summary",
           style: quicksandBold.copyWith(
-              fontSize: Dimensions.fontSizeEighteen, color: AppColor.white),
+            fontSize: Dimensions.fontSizeEighteen,
+            color: AppColor.white,
+          ),
         ),
       ),
       body: Padding(
@@ -101,12 +125,9 @@ class _BillingUnitReportState extends State<BillingUnitReport> {
         child: Column(
           children: [
             InkWell(
-              onTap: () {
-                _selectDate(context);
-              },
+              onTap: () => _selectDate(context),
               child: Container(
-                margin:
-                    EdgeInsets.symmetric(horizontal: Dimensions.marginSizeTen),
+                margin: EdgeInsets.symmetric(horizontal: Dimensions.marginSizeTen),
                 padding: EdgeInsets.symmetric(
                   horizontal: Dimensions.paddingSizeTwenty,
                   vertical: Dimensions.paddingSizeTwelve,
@@ -118,27 +139,56 @@ class _BillingUnitReportState extends State<BillingUnitReport> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    /// Wrapped in Flexible to prevent overflow
                     Flexible(
                       child: Text(
                         "${DateFormat('yyyy-MM-dd').format(selectedDate)}",
                         style: quicksandBold.copyWith(
                             fontSize: Dimensions.fontSizeFourteen,
-                            color: AppColor
-                                .neviBlue), // Prevents long text overflow
+                            color: AppColor.neviBlue),
                       ),
                     ),
-                    Icon(
-                      Icons.calendar_today_outlined,
-                      color: AppColor.neviBlue,
-                    ),
+                    Icon(Icons.calendar_today_outlined, color: AppColor.neviBlue),
                   ],
                 ),
               ),
             ),
-            SizedBox(
-              height: 15,
-            ),
+            SizedBox(height: 15),
+            // Pie Chart showing TMS, RENTAL, 3MS distribution
+            if (totalQty > 0)
+              PieChart(
+                dataMap: pieDataMap,
+                animationDuration: Duration(milliseconds: 800),
+                chartRadius: MediaQuery.of(context).size.width / 2.5,
+                colorList: pieColors,
+                chartType: ChartType.disc,
+                legendOptions: LegendOptions(
+                  showLegendsInRow: false,
+                  legendPosition: LegendPosition.right,
+                  showLegends: true,
+                  legendTextStyle: quicksandBold.copyWith(
+                      fontWeight: FontWeight.w900,
+                      fontSize: Dimensions.fontSizeFourteen),
+                ),
+                chartValuesOptions: ChartValuesOptions(
+                  showChartValues: true,
+                  showChartValuesInPercentage: true,
+                  chartValueStyle: quicksandBold.copyWith(
+                      fontSize: Dimensions.fontSizeTwelve,
+                      fontWeight: FontWeight.w900,
+                      color: AppColor.white),
+                  chartValueBackgroundColor: Colors.transparent,
+                  decimalPlaces: 1,
+                ),
+              ),
+            if (totalQty == 0)
+              Text(
+                'No data available for selected date.',
+                style: quicksandBold.copyWith(
+                    fontSize: Dimensions.fontSizeSixteen,
+                    color: AppColor.neviBlue),
+              ),
+
+            SizedBox(height: 20),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -152,21 +202,43 @@ class _BillingUnitReportState extends State<BillingUnitReport> {
                                 text: 'TMS ',
                                 style: quicksandBold.copyWith(
                                     fontSize: Dimensions.fontSizeTwenty,
-                                    color: AppColor.lightYellow,fontWeight: FontWeight.w900),
+                                    color: AppColor.lightYellow,
+                                    fontWeight: FontWeight.w900),
                               ),
                               TextSpan(
                                 text: '${tmsPercentage.toStringAsFixed(1)}%',
                                 style: quicksandSemibold.copyWith(
                                     fontSize: Dimensions.fontSizeTwelve,
-                                    color: AppColor
-                                        .white), // Use smaller font size here
+                                    color: AppColor.white),
                               ),
                             ],
                           ),
                         ),
                         tmsData,
                       ),
-                    SizedBox(height: 5),
+                    if (totalQty > 0)
+                      _buildTable(
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'RENTAL ',
+                                style: quicksandBold.copyWith(
+                                    fontSize: Dimensions.fontSizeTwenty,
+                                    color: AppColor.lightYellow,
+                                    fontWeight: FontWeight.w900),
+                              ),
+                              TextSpan(
+                                text: '${rentalPercentage.toStringAsFixed(1)}%',
+                                style: quicksandSemibold.copyWith(
+                                    fontSize: Dimensions.fontSizeTwelve,
+                                    color: AppColor.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                        rentalData,
+                      ),
                     if (totalQty > 0)
                       _buildTable(
                         RichText(
@@ -176,14 +248,14 @@ class _BillingUnitReportState extends State<BillingUnitReport> {
                                 text: '3MS ',
                                 style: quicksandBold.copyWith(
                                     fontSize: Dimensions.fontSizeTwenty,
-                                    color: AppColor.lightYellow,fontWeight: FontWeight.w900),
+                                    color: AppColor.lightYellow,
+                                    fontWeight: FontWeight.w900),
                               ),
                               TextSpan(
                                 text: '${tms3Percentage.toStringAsFixed(1)}%',
                                 style: quicksandSemibold.copyWith(
                                     fontSize: Dimensions.fontSizeTwelve,
-                                    color: AppColor
-                                        .white), // Use smaller font size here
+                                    color: AppColor.white),
                               ),
                             ],
                           ),
@@ -191,10 +263,12 @@ class _BillingUnitReportState extends State<BillingUnitReport> {
                         tms3Data,
                       ),
                     if (totalQty == 0)
-                      Text('No data available for selected date.',
-                          style: quicksandBold.copyWith(
-                              fontSize: Dimensions.fontSizeSixteen,
-                              color: AppColor.neviBlue)),
+                      Text(
+                        'No data available for selected date.',
+                        style: quicksandBold.copyWith(
+                            fontSize: Dimensions.fontSizeSixteen,
+                            color: AppColor.neviBlue),
+                      ),
                   ],
                 ),
               ),

@@ -90,7 +90,7 @@ class FuelEntryScreen extends StatelessWidget {
                       Expanded(
                         child: Obx(() {
                           print(
-                              "Vehicle Number: ${controller.selectedVehicleNumbers.value}");
+                              "Vehicle Regn No.: ${controller.selectedVehicleNumbers.value}");
 
                           //  Update the controller before building the UI
                           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -98,7 +98,7 @@ class FuelEntryScreen extends StatelessWidget {
                                 controller.selectedVehicleNumbers.value;
                           });
 
-                          return buildReadOnlyField('Vehicle Number',
+                          return buildReadOnlyField('Vehicle Regn No.',
                               controller.vehicleNumberController);
                         }),
                       ),
@@ -367,85 +367,89 @@ class FuelEntryScreen extends StatelessWidget {
   }
 
   Widget buildSearchableDropdown(
-      String label, List<String> items, RxnString selectedValue,
-      {bool required = false, Function(String)? onSelected}) {
-    TextEditingController controller = TextEditingController(
-        text: selectedValue.value ?? ""); // Initialize controller
+      String label,
+      List<String> items,
+      RxnString selectedValue, {
+        bool required = false,
+        Function(String)? onSelected
+      }) {
+    TextEditingController controller = TextEditingController();
 
-    // Ensure controller updates when selectedValue changes
-    once(selectedValue, (value) {
-      controller.text = value ?? "";
+    // Update the controller text based on selected value
+    controller.text = selectedValue.value ?? "";
+
+    return Obx(() {
+      // Update the text if the selected value changes
+      controller.text = selectedValue.value ?? "";
+
+      return TextFormField(
+        style: quicksandSemibold.copyWith(
+          fontSize: Dimensions.fontSizeFourteen, // Ensure text is not bold
+        ),
+        controller: controller,
+        readOnly: true,
+        // Prevent manual typing
+        onTap: () {
+          showSearchDialog(
+            label,
+            items,
+            selectedValue,
+            controller,
+                (selectedItem) {
+              selectedValue.value = selectedItem; // Update selected value
+              if (onSelected != null) {
+                onSelected(selectedItem); // Dynamically call the correct function
+              }
+            },
+          );
+        },
+        decoration: InputDecoration(
+          errorText: null,
+          errorStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeTen),
+          labelText: label,
+          labelStyle: quicksandRegular.copyWith(
+            fontSize: Dimensions.fontSizeFourteen,
+            color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+                ? AppColor.primaryRed
+                : AppColor.black, // or any color you want for filled state
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(
+              width: 1.5,
+              color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+                  ? AppColor.primaryRed
+                  : AppColor.neviBlue,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(
+              width: 1.5,
+              color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
+                  ? AppColor.primaryRed
+                  : AppColor.green,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
+          ),
+          contentPadding: EdgeInsets.symmetric(
+              horizontal: Dimensions.paddingSizeTwelve,
+              vertical: Dimensions.paddingSizeFourteen),
+          // Adjust spacing
+          suffixIcon: Icon(Icons.arrow_drop_down, color: AppColor.green), // Dropdown icon
+        ),
+        validator: required
+            ? (value) => (value == null || value.isEmpty) ? "Please select $label" : null
+            : null,
+      );
     });
-
-    return TextFormField(
-      style: quicksandSemibold.copyWith(
-        fontSize: Dimensions.fontSizeFourteen, // Ensure text is not bold
-      ),
-      controller: controller,
-      readOnly: true,
-      // Prevent manual typing
-      onTap: () {
-        showSearchDialog(
-          label,
-          items,
-          selectedValue,
-          controller,
-          (selectedItem) {
-            selectedValue.value = selectedItem; // Update selected value
-            if (onSelected != null) {
-              onSelected(selectedItem); // Dynamically call the correct function
-            }
-          },
-        );
-      },
-      decoration: InputDecoration(
-        errorText: null,
-        errorStyle: quicksandRegular.copyWith(fontSize: Dimensions.fontSizeTen),
-        labelText: label,
-        labelStyle: quicksandRegular.copyWith(
-          fontSize: Dimensions.fontSizeFourteen,
-          color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
-              ? AppColor.primaryRed
-              : AppColor.black, // or any color you want for filled state
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            width: 1.5,
-            color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
-                ? AppColor.primaryRed
-                : AppColor.neviBlue,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            width: 1.5,
-            color: (required && (selectedValue.value == null || selectedValue.value!.isEmpty))
-                ? AppColor.primaryRed
-                : AppColor.green,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(width: 1.5, color: AppColor.primaryRed),
-        ),
-        contentPadding: EdgeInsets.symmetric(
-            horizontal: Dimensions.paddingSizeTwelve,
-            vertical: Dimensions.paddingSizeFourteen),
-        // Adjust spacing
-        suffixIcon:
-            Icon(Icons.arrow_drop_down, color: AppColor.green), // Dropdown icon
-      ),
-      validator: required
-          ? (value) =>
-              (value == null || value.isEmpty) ? "Please select $label" : null
-          : null,
-    );
   }
 
   void showSearchDialog(

@@ -4,8 +4,6 @@ import 'package:tk_logistics/routes/routes_name.dart';
 import '../features/auth/login/login_screen.dart';
 import '../features/screens/home/challan/screen/challan_screen.dart';
 import '../features/screens/home/create_trip/create_trip_screen.dart';
-import '../features/screens/home/create_trip/pod/screen/proof_of_delivery_screen_3ms.dart';
-import '../features/screens/home/create_trip/pod/screen/proof_of_delivery_screen_tms.dart';
 import '../features/screens/home/create_trip/3ms/quotation/screen/quotation_screen.dart';
 import '../features/screens/home/dashboard/billing_unit_report/screen/billing_unit_report.dart';
 import '../features/screens/home/dashboard/dashboard_screen.dart';
@@ -15,7 +13,12 @@ import '../features/screens/home/fuel_entry/screen/fuel_entry_list.dart';
 import '../features/screens/home/trip_history/screen/trip_history_screen.dart';
 import '../features/screens/home/home_screen.dart';
 import '../features/screens/home/trip_history/update trip/3ms/screen/update_3ms_trip.dart';
+import '../features/screens/home/trip_history/update trip/pod/screen/proof_of_delivery_screen_3ms.dart';
+import '../features/screens/home/trip_history/update trip/pod/screen/proof_of_delivery_screen_rental.dart';
+import '../features/screens/home/trip_history/update trip/pod/screen/proof_of_delivery_screen_tms.dart';
+import '../features/screens/home/trip_history/update trip/rental/screen/update_rental_trip.dart';
 import '../features/screens/home/trip_history/update trip/tms/screen/update_tms_trip.dart';
+import '../features/screens/home/vehicle_maintenance/screen/update_maintenance_form.dart';
 import '../features/screens/initial/initial_screen.dart';
 import '../features/screens/splash/splash_screen.dart';
 
@@ -85,6 +88,11 @@ class AppRoutes {
     ),
 
     GetPage(
+      name: RoutesName.proofOfDeliveryScreenRental,
+      page: () =>  ProofOfDeliveryScreenRental(),
+    ),
+
+    GetPage(
       name: RoutesName.proofOfDeliveryScreen3ms,
       page: () =>  ProofOfDeliveryScreen3ms(),
     ),
@@ -100,9 +108,19 @@ class AppRoutes {
     ),
 
     GetPage(
+      name: RoutesName.updateRentalTrip,
+      page: () =>  UpdateRentalTrip(),
+    ),
+
+    GetPage(
       name: RoutesName.update3msTrip,
       page: () =>  Update3msTrip(),
     ),
+
+   /* GetPage(
+      name: RoutesName.updateMaintenanceForm,
+      page: () =>  UpdateMaintenanceForm(maintenanceId: '',),
+    ),*/
 
     GetPage(
       name: RoutesName.challanScreen,

@@ -30,10 +30,11 @@ class ChallanController extends GetxController {
     fetchTripData();
   }
 
-  Future<pw.Font> loadFont(String fontPath) async {
-    final fontData = await rootBundle.load(fontPath);
-    return pw.Font.ttf(fontData.buffer.asByteData());
+  Future<pw.ImageProvider> loadScissorsImage() async {
+    final imageData = await rootBundle.load('assets/images/scissors.png');
+    return pw.MemoryImage(imageData.buffer.asUint8List());
   }
+
 
   Future<void> loadImage() async {
     final ByteData data =
@@ -71,7 +72,7 @@ class ChallanController extends GetxController {
     if (tripData == null || imageBytes == null) return;
 
     final pdf = pw.Document();
-    final banglaFont = await loadFont('assets/fonts/SolaimanLipi.ttf');
+    final scissorsIcon = await loadScissorsImage();
 
     pdf.addPage(
       pw.Page(
@@ -79,9 +80,36 @@ class ChallanController extends GetxController {
         build: (pw.Context context) {
           return pw.Column(
             children: [
-              buildDeliveryChallan(tripData, banglaFont, imageBytes!),
-              pw.Divider(thickness: 1),
-              buildDeliveryChallan(tripData, banglaFont, imageBytes!),
+              buildDeliveryChallan(tripData, imageBytes!),
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                  pw.Image(scissorsIcon, width: 12, height: 12),
+                  pw.SizedBox(width: 4),
+                  pw.Expanded(
+                    child: pw.LayoutBuilder(
+                      builder: (context, constraints) {
+                        const dashWidth = 4.0;
+                        const dashSpace = 2.0;
+                        final dashCount = ((constraints?.maxWidth ?? 0) / (dashWidth + dashSpace)).floor();
+
+                        return pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: List.generate(dashCount, (_) {
+                            return pw.Container(
+                              width: dashWidth,
+                              height: 1,
+                              color: PdfColors.black,
+                            );
+                          }),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 28),
+              buildDeliveryChallan(tripData, imageBytes!),
             ],
           );
         },

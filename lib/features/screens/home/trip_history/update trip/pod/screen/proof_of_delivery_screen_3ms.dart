@@ -5,21 +5,19 @@ import 'package:image_picker/image_picker.dart';
 import 'package:tk_logistics/common/widgets/custom_outlined_button.dart';
 import 'package:tk_logistics/features/screens/home/trip_history/update%20trip/3ms/controller/update_3ms_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../../../../../../util/app_color.dart';
-import '../../../../../../util/dimensions.dart';
-import '../../../../../../util/styles.dart';
-import '../../../trip_history/update trip/tms/controller/update_tms_controller.dart';
+import '../../../../../../../util/app_color.dart';
+import '../../../../../../../util/dimensions.dart';
+import '../../../../../../../util/styles.dart';
 import '../controller/filed_picker_controller.dart';
 
-class ProofOfDeliveryScreenTms extends StatelessWidget {
+class ProofOfDeliveryScreen3ms extends StatelessWidget {
   final FilePickerController fileController = Get.put(FilePickerController());
-  final UpdateTmsController tripController = Get.find<UpdateTmsController>();
-  //final Update3msController controller = Get.find<Update3msController>();
+  //final UpdateTmsController tripController = Get.find<UpdateTmsController>();
+  final Update3msController controller = Get.find<Update3msController>();
 
   final String tripId;
 
-  ProofOfDeliveryScreenTms({Key? key})
+  ProofOfDeliveryScreen3ms({Key? key})
       : tripId = Get.arguments?['tripId'] ?? '',
         super(key: key);
 
@@ -55,7 +53,7 @@ class ProofOfDeliveryScreenTms extends StatelessWidget {
                 child: Obx(() {
                   final file = fileController.selectedFile.value;
                   final hasFile = file != null;
-                  final tripPoD = tripController.tripPoD.value;
+                  final tripPoD = controller.tripPoD.value;
                   final hasTripPoD = tripPoD.isNotEmpty;
 
                   return Row(
@@ -124,11 +122,11 @@ class ProofOfDeliveryScreenTms extends StatelessWidget {
               text: "Upload",
               width: double.infinity,
               onTap: () async {
-                final tripController = Get.find<UpdateTmsController>();
+                final controller = Get.find<Update3msController>();
                 await fileController.uploadFile(
-                  tripId: tripController.tripId.value,
-                  fetchTripDetails: tripController.fetchTripDetails,
-                  isDataLoading: tripController.isDataLoading,
+                  tripId: controller.tripId.value,
+                  fetchTripDetails: controller.fetchTripDetails,
+                  isDataLoading: controller.isDataLoading,
                 );
               },
             ),

@@ -14,10 +14,9 @@ import '../../../../../../../routes/routes_name.dart';
 import '../../../../../../../util/app_color.dart';
 import '../../../../../../../util/dimensions.dart';
 import '../../../../../../../util/styles.dart';
-import '../../../../create_trip/pod/controller/filed_picker_controller.dart';
 import 'package:http/http.dart' as http;
-
-import '../../../../create_trip/pod/screen/proof_of_delivery_screen_tms.dart';
+import '../../pod/controller/filed_picker_controller.dart';
+import '../../pod/screen/proof_of_delivery_screen_tms.dart';
 
 class UpdateTmsTrip extends StatelessWidget {
   final UpdateTmsController controller = Get.put(UpdateTmsController());
@@ -174,7 +173,7 @@ class UpdateTmsTrip extends StatelessWidget {
                       ),
                       Expanded(
                           child: buildReadOnlyField(
-                              "Vehicle Number",
+                              "Vehicle Regn No.",
                               controller.selectedVehicleNumbers,
                               controller.vehicleNumberController)),
                     ]),
@@ -262,7 +261,6 @@ class UpdateTmsTrip extends StatelessWidget {
                         ),
                       ],
                     ),
-
                     SizedBox(height: 5),
                     buildMultiSelectDropdown(
                       "Product Type", // Label for the dropdown
@@ -362,7 +360,7 @@ class UpdateTmsTrip extends StatelessWidget {
                               }
                             },
                           ))),
-                        Expanded(
+                        /*Expanded(
                           child:Obx(() => loadingController.isClosingTrip.value
                               ? spinkit
                               : CustomButton(
@@ -380,7 +378,7 @@ class UpdateTmsTrip extends StatelessWidget {
                               );
                             },
                           ))
-                        ),
+                        ),*/
                         Expanded(
                             child: CustomButton(
                               text: "Print Challan",
